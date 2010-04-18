@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<string-array name="control_entries">
+		<item>Keyboard</item>
+		<item>Kempston</item>
+		<item>Cursor</item>
+		<item>Sinclair I</item>
+		<item>Sinclair II</item>
+	</string-array>
+
+	<string-array name="machine_entries">
+		<item>Spectrum 16K</item>
+		<item>Spectrum 48K</item>
+		<item>Spectrum 128K</item>
+		<item>Spectrum +2</item>
+		<item>Spectrum +2A</item>
+		<item>Spectrum +3</item>
+		<item>Spectrum +3e</item>
+		<item>Timex TC2048</item>
+		<item>Timex TC2068</item>
+		<item>Timex TS2068</item>
+		<item>Pentagon 128K</item>
+		<item>Pentagon 512K</item>
+		<item>Pentagon 1024K</item>
+		<item>Scorpion ZS 256</item>
+		<item>Spectrum SE</item>
+	</string-array>
+
+	<string-array name="machine_entryValues">
+		<item>16</item>
+		<item>48</item>
+		<item>128</item>
+		<item>plus2</item>
+		<item>plus2a</item>
+		<item>plus3</item>
+		<item>plus3e</item>
+		<item>2048</item>
+		<item>2068</item>
+		<item>ts2068</item>
+		<item>pentagon</item>
+		<item>pentagon512</item>
+		<item>pentagon1024</item>
+		<item>scorpion</item>
+		<item>se</item>
+	</string-array>
+
+</resources>

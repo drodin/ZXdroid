@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+
+	<TextView android:id="@+id/savepath_tv" android:background="@color/grey"
+		android:layout_width="fill_parent" android:layout_height="wrap_content"
+		android:layout_marginTop="5dip" android:layout_marginBottom="5dip"
+		android:padding="5dip" android:textColor="@color/black"
+		android:textSize="15sp" />
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:orientation="horizontal" android:layout_width="fill_parent"
+		android:layout_height="wrap_content">
+		<EditText android:id="@+id/savefn_et" android:background="@color/grey"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_marginTop="5dip" android:layout_marginBottom="5dip"
+			android:padding="5dip" android:textColor="@color/red"
+			android:textSize="15sp" android:text="@string/default_save_fn" />
+		<TextView android:id="@+id/saveext_tv" android:background="@color/grey"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+			android:layout_marginTop="5dip" android:layout_marginBottom="5dip"
+			android:padding="5dip" android:textColor="@color/black"
+			android:textSize="15sp" android:text="@string/save_ext" />
+	</LinearLayout>
+
+	<Button android:id="@+id/save_btn" android:text="@string/save_btn"
+		android:layout_width="fill_parent" android:layout_height="wrap_content" />
+
+	<ListView android:id="@id/android:list" android:layout_width="fill_parent"
+		android:layout_height="fill_parent" />
+
+</LinearLayout>

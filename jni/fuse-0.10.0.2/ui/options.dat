@@ -1,0 +1,66 @@
+general
+General Options
+Entry, (E)mulation speed, emulation_speed, INPUT_KEY_e, 5, %
+Entry, F(r)ame rate (1:n), frame_rate, INPUT_KEY_r, 1, frames
+Checkbox, Issue (2) keyboard, issue2, INPUT_KEY_2
+Checkbox, Use (t)ape traps, tape_traps, INPUT_KEY_t
+Checkbox, (F)astloading, fastload, INPUT_KEY_f
+Checkbox, (D)etect loaders, detect_loader, INPUT_KEY_d
+Checkbox, Accelerate l(o)aders, accelerate_loader, INPUT_KEY_o
+Checkbox, (A)uto-load media, auto_load, INPUT_KEY_a
+Checkbox, Use .s(l)t traps, slt_traps, INPUT_KEY_l
+Checkbox, Allow (w)rites to ROM, writable_roms, INPUT_KEY_w
+Checkbox, A(u)to-save settings, autosave_settings, INPUT_KEY_u
+Entry, (M)DR cartridge len, mdr_len, INPUT_KEY_m, 3, blocks
+Checkbox, Random len(g)th MDR cartridge, mdr_random_len, INPUT_KEY_g
+Checkbox, RS-232 (h)andshake, rs232_handshake, INPUT_KEY_h
+#ifdef BUILD_WITH_SNET
+Checkbox, Raw Sinclair(N)ET, raw_s_net, INPUT_KEY_n
+#endif
+Checkbox, Black and white T(V), bw_tv, INPUT_KEY_v
+Checkbox, (P)AL-TV use TV2x effect, pal_tv2x, INPUT_KEY_p
+#ifdef UI_SDL
+Checkbox, Full (s)creen, full_screen, INPUT_KEY_s
+#endif
+Checkbox, (C)onfirm actions, confirm_actions, INPUT_KEY_c
+Checkbox, Show status(b)ar, statusbar, INPUT_KEY_b
+Checkbox, Snap (j)oystick prompt, joy_prompt, INPUT_KEY_j
+Checkbox, Late t(i)mings, late_timings, INPUT_KEY_i
+
+peripherals
+Peripheral Options
+Checkbox, (K)empston joystick, joy_kempston, INPUT_KEY_k
+Checkbox, Kempston (m)ouse, kempston_mouse, INPUT_KEY_m
+Checkbox, Inter(f)ace I, interface1, INPUT_KEY_f
+Checkbox, (I)nterface II, interface2, INPUT_KEY_i
+Checkbox, Emulate (p)rinters, printer, INPUT_KEY_p
+Checkbox, Simple (8)-bit IDE, simpleide_active, INPUT_KEY_8
+Checkbox, (Z)XATASP interface, zxatasp_active, INPUT_KEY_z
+Checkbox, ZXATASP (u)pload, zxatasp_upload, INPUT_KEY_u
+Checkbox, ZXATASP (w)rite protect, zxatasp_wp, INPUT_KEY_w
+Checkbox, ZX(C)F interface, zxcf_active, INPUT_KEY_c
+Checkbox, ZXCF up(l)oad, zxcf_upload, INPUT_KEY_l
+Checkbox, (D)ivIDE interface, divide_enabled, INPUT_KEY_d
+Checkbox, DivIDE w(r)ite protect, divide_wp, INPUT_KEY_r
+Checkbox, +D i(n)terface, plusd, INPUT_KEY_n
+Checkbox, (B)eta 128 interface, beta128, INPUT_KEY_b
+Posthook, periph_update
+
+rzx
+RZX Options
+Checkbox, Create (a)utosaves, rzx_autosaves, INPUT_KEY_a
+Checkbox, (C)ompress RZX data, rzx_compression, INPUT_KEY_c
+Checkbox, C(o)mpetition mode, competition_mode, INPUT_KEY_o
+Entry, Co(m)petition code, competition_code, INPUT_KEY_m, 8,
+Checkbox, Always (e)mbed snapshot, embed_snapshot, INPUT_KEY_e
+
+sound
+Sound Options
+Checkbox, (S)ound enabled, sound, INPUT_KEY_s
+Checkbox, (L)oading sound, sound_load, INPUT_KEY_l
+Checkbox, (A)Y stereo separation, stereo_ay, INPUT_KEY_a
+Checkbox, (B)eeper pseudo-stereo, stereo_beeper, INPUT_KEY_b
+Checkbox, (F)orce 8-bit, sound_force_8bit, INPUT_KEY_f
+#ifdef HAVE_SAMPLERATE 
+Checkbox, (H)i-fi beeper, sound_hifi, INPUT_KEY_h
+#endif /* #ifdef HAVE_SAMPLERATE */

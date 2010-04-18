@@ -1,0 +1,46 @@
+Fuse has been brought to you by:
+
+* Matan Ziv-Av: SVGAlib and framebuffer user interfaces, the glib
+  replacement code, some work on the sound code and the original
+  `widget' code.
+
+* Russell Marks: the generic and OSS-specific sound code, the man page,
+  the Kempston joystick emulation and lots of bug reports and fixes.
+
+* Ian Collier: the original ZX Printer emulation (for xz80).
+
+* John Elliott: for lib765, which provides Fuse's emulation of the +3's
+  FDC, and libdsk which provides support for more disk image formats:
+  see http://www.seasip.demon.co.uk/Unix/LibDsk/
+
+* Darren Salt: the original versions of the code for +3 emulation,
+  SLT support, MITSHM support (for the Xlib UI), TZX raw data blocks,
+  and RZX embedded snapshots and compression.
+
+* Alexander Yurchenko: the OpenBSD/Solaris-specific sound code.
+
+* Fredrick Meunier: for TC2048 support, the SDL user interface, the
+  graphics filters, Pentagon support, Spectrum SE support, Interface
+  II support and more.
+
+* Ludvig Strigeus and The ScummVM project: the original graphics filter code.
+
+* Dmitry Sanarin: the original TR-DOS emulation (for Glukalka).
+
+* Witold Filipczyk: TC2068 support and more.
+
+* Matthew Wescott: the AY logging code.
+
+* Marek Januszewski: Some patches making Fuse much closer to compiling under
+  Win32, and fixing up the GTK+ 2.0 interface.
+
+* Stuart Brady: for the Scorpion emulation and HP-UX sound support.
+
+* Garry Lancaster: the simple 8-bit IDE, ZXATASP and ZXCF support.
+
+* Gergely Szasz: Interface I/microdrive emulation, the 'movie' code and the
+  ao sound driver.
+
+* Philip Kendall: everything else.
+
+$Id: AUTHORS 2433 2004-11-28 21:58:44Z pak21 $

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	package="com.drodin.zxdroid" android:versionCode="3"
+	android:versionName="0.4.2">
+
+	<supports-screens android:smallScreens="true"
+		android:normalScreens="true" android:largeScreens="true"
+		android:anyDensity="true" />
+
+	<application android:icon="@drawable/icon" android:label="@string/app_name"
+		android:debuggable="true" android:theme="@style/Theme">
+
+		<activity android:name=".MainActivity" android:label="@string/app_name"
+			android:launchMode="singleTask" android:configChanges="keyboardHidden|orientation"
+			android:windowSoftInputMode="stateAlwaysHidden">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity>
+
+		<activity android:name=".menu.MenuTop" android:theme="@style/Theme.Translucent" />
+		<activity android:name=".menu.FileOpen" />
+		<activity android:name=".menu.FileSave" />
+		<activity android:name=".menu.DefineKeys" />
+		<activity android:name=".menu.KeySelect" android:theme="@android:style/Theme.Dialog" />
+
+		<meta-data android:value="a14bbf53ddb4d16" android:name="ADMOB_PUBLISHER_ID" />
+
+	</application>
+
+	<uses-sdk android:minSdkVersion="3" />
+
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"></uses-permission>
+	<uses-permission android:name="android.permission.INTERNET" />
+
+</manifest> 

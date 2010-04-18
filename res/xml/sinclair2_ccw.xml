@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
+	android:keyWidth="50dip" android:keyHeight="53dip"
+	android:horizontalGap="0dip" android:verticalGap="0dip">
+
+	<Row>
+		<Key android:codes="13016" android:keyIcon="@drawable/zxkb_up_left" />
+		<Key android:codes="16" android:keyIcon="@drawable/zxkb_up" />
+		<Key android:codes="14016" android:keyIcon="@drawable/zxkb_up_right" />
+	</Row>
+
+	<Row>
+		<Key android:codes="13" android:keyIcon="@drawable/zxkb_left" />
+		<Key android:codes="14" android:keyIcon="@drawable/zxkb_right"
+			android:horizontalGap="50dip" />
+	</Row>
+
+	<Row android:verticalGap="58dip">
+		<Key android:codes="13015" android:keyIcon="@drawable/zxkb_down_left" />
+		<Key android:codes="15" android:keyIcon="@drawable/zxkb_down" />
+		<Key android:codes="14015" android:keyIcon="@drawable/zxkb_down_right" />
+	</Row>
+
+	<Row>
+		<Key android:codes="62" android:keyIcon="@drawable/zxkb_space" />
+		<Key android:codes="7" android:keyIcon="@drawable/zxkb_fire"
+			android:horizontalGap="50dip" />
+	</Row>
+
+</Keyboard>

@@ -1,0 +1,137 @@
+/*
+
+   Copyright (c) 2010 Dmitry Rodin
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program; if not, write to the Free Software Foundation, Inc.,
+   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+   Author contact information:
+
+   E-mail: rodin.dmitry@gmail.com
+
+*/
+
+#include <config.h>
+#include "ui/android/android.h"
+
+#if !defined USE_JOYSTICK || defined HAVE_JSW_H
+/* Fake joystick, or override UI-specific handling */
+#include "../uijoystick.c"
+
+#else			/* #if !defined USE_JOYSTICK || defined HAVE_JSW_H */
+
+#include "compat.h"
+#include "input.h"
+#include "androidjoystick.h"
+#include "settings.h"
+#include "ui/ui.h"
+#include "ui/uijoystick.h"
+#include "ui/android/androidui.h"
+
+static void do_axis( int which, int value, input_key negative,
+		     input_key positive );
+
+int
+ui_joystick_init( void )
+{
+  settings_current.joystick_1_output = 2;
+  return 0;
+}
+
+void
+ui_joystick_poll( void )
+{
+  /* No action needed; */
+}
+
+static void
+button_action( int button, input_event_type type )
+{
+  input_event_t event;
+  
+  if( button > 10 ) return;	/* We support 'only' 10 fire buttons */
+
+  event.type = type;
+  event.types.joystick.which = ANDROID_JOYBUTTON_FIRE;
+  event.types.joystick.button = INPUT_JOYSTICK_FIRE_1 + button;
+
+  input_event( &event );
+}
+
+void
+androidjoystick_buttonpress( int button )
+{
+  button_action( button, INPUT_EVENT_JOYSTICK_PRESS );
+}
+
+void
+androidjoystick_buttonrelease( int button )
+{
+  button_action( button, INPUT_EVENT_JOYSTICK_RELEASE );
+}
+
+void
+androidjoystick_axismove( int value )
+{
+    LOGI("joy axis %i", value);
+    
+    switch (value) {
+        case ANDROID_JOYAXISMOTION_LEFT:
+            do_axis( 0, value, INPUT_JOYSTICK_LEFT, INPUT_JOYSTICK_RIGHT );            
+            break;
+        case ANDROID_JOYAXISMOTION_DOWN:
+            do_axis( 0, value, INPUT_JOYSTICK_UP, INPUT_JOYSTICK_DOWN ); 
+            break;                   
+        case ANDROID_JOYAXISMOTION_UP:
+            do_axis( 0, value, INPUT_JOYSTICK_UP, INPUT_JOYSTICK_DOWN );
+            break;           
+        case ANDROID_JOYAXISMOTION_RIGHT:
+            do_axis( 0, value, INPUT_JOYSTICK_LEFT, INPUT_JOYSTICK_RIGHT );
+            break; 
+    } 
+}
+
+static void
+do_axis( int which, int value, input_key negative, input_key positive )
+{
+  input_event_t event1, event2;
+
+  event1.types.joystick.which = event2.types.joystick.which = which;
+
+  event1.types.joystick.button = negative;
+  event2.types.joystick.button = positive;
+
+    switch (value) {
+        case ANDROID_JOYAXISMOTION_LEFT:
+        case ANDROID_JOYAXISMOTION_UP:        
+            event1.type = INPUT_EVENT_JOYSTICK_PRESS;
+            event2.type = INPUT_EVENT_JOYSTICK_RELEASE;
+            break;
+        case ANDROID_JOYAXISMOTION_RIGHT:
+        case ANDROID_JOYAXISMOTION_DOWN:        
+            event1.type = INPUT_EVENT_JOYSTICK_RELEASE;
+            event2.type = INPUT_EVENT_JOYSTICK_PRESS;
+            break;
+    }
+
+  input_event( &event1 );
+  input_event( &event2 );
+}
+
+void
+ui_joystick_end( void )
+{
+}
+
+#endif			/* #if !defined USE_JOYSTICK || defined HAVE_JSW_H */

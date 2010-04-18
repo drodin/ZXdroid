@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">ZXdroid</string>
+
+	<string name="welcome_title">Welcome to ZXdroid!</string>
+	<string name="welcome_message">
+		A ZX Spectrum emulator for Android platform
+		based on Fuse (the Free Unix Spectrum Emulator).
+		\n\nCoded by Dmitry Rodin.
+		\n\nTAP SPECTRUM SCREEN FOR MENU!
+		(Read it carefully)
+		\n\nDpad/trackball is definied as Kempston
+		joystick by default - you can change it in
+		Menu > Define keys.</string>
+
+	<string name="emulator_state">Emulator state</string>
+	<string name="load_file">Load file</string>
+	<string name="save_snapshot">Save snapshot</string>
+	<string name="current_machine">Select machine</string>
+	<string name="exit">Exit</string>
+
+	<string name="video_settings">Video settings</string>
+	<string name="smooth_scaling">Smooth scaling</string>
+
+	<string name="audio_settings">Audio settings</string>
+	<string name="enable_sound">Enable sounds</string>
+
+	<string name="control_settings">Control settings</string>
+	<string name="onscreen_controls">OnScreen controls</string>
+	<string name="define_keys">Define Keys</string>
+	<string name="trackball_sensitivity">Trackball sensitivity</string>
+
+	<string name="save_btn">Save</string>
+	<string name="default_save_fn">current</string>
+	<string name="save_ext">.sna</string>
+
+	<string name="df_title">Press button for \"%s\"</string>
+	<string name="df_message">We are trying to handle as many hardware keys as
+		possible, but it roughly depends on your hardware/software.</string>
+	<string name="df_btn_cancel">Cancel</string>
+	<string name="df_btn_clear">Clear</string>
+
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent" android:layout_height="fill_parent"
+	android:background="@color/black">
+
+	<TextView android:id="@+id/controlName" android:textSize="22sp"
+		android:layout_width="fill_parent" android:layout_height="fill_parent" />
+	<com.drodin.zxdroid.SoftControls
+		android:id="@+id/keyboardView" android:keyBackground="@drawable/zxkb_key"
+		android:layout_width="fill_parent" android:layout_height="fill_parent"
+		android:keyTextSize="22sp" android:labelTextSize="13sp"
+		android:background="@drawable/transparent" />
+
+</RelativeLayout>

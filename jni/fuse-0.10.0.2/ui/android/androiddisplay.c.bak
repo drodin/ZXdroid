@@ -1,0 +1,262 @@
+/*
+
+   Copyright (c) 2010 Dmitry Rodin
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License along
+   with this program; if not, write to the Free Software Foundation, Inc.,
+   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+   Author contact information:
+
+   E-mail: rodin.dmitry@gmail.com
+
+*/
+
+#include <config.h>
+
+#include <limits.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <libspectrum.h>
+
+#include <GLES/gl.h>
+#include <GLES/glext.h>
+
+#include "android.h"
+
+#include "display.h"
+#include "fuse.h"
+#include "machine.h"
+#include "scld.h"
+#include "settings.h"
+#include "ui/ui.h"
+#include "ui/uidisplay.h"
+#include "utils.h"
+#ifdef USE_WIDGET
+#include "ui/widget/widget.h"
+#endif				/* #ifdef USE_WIDGET */
+#include "androiddisplay.h"
+
+int needRedraw;
+
+static int image_width = 320;
+static int image_height = 240;
+
+#define RECTS_X 40
+#define RECTS_Y 30
+typedef struct upd_rect {
+        uint16_t set;
+        uint16_t data[8*8];
+} upd_rect;
+static upd_rect upd_rects[RECTS_X][RECTS_Y];
+static int dx, dy;
+
+static uint16_t colour_values[16];
+
+static ANDROID_Color colour_palette[] = {
+  {   0,   0,   0 }, 
+  {   0,   0, 192 }, 
+  { 192,   0,   0 }, 
+  { 192,   0, 192 }, 
+  {   0, 192,   0 }, 
+  {   0, 192, 192 }, 
+  { 192, 192,   0 }, 
+  { 192, 192, 192 }, 
+  {   0,   0,   0 }, 
+  {   0,   0, 255 }, 
+  { 255,   0,   0 }, 
+  { 255,   0, 255 }, 
+  {   0, 255,   0 }, 
+  {   0, 255, 255 }, 
+  { 255, 255,   0 }, 
+  { 255, 255, 255 }
+};
+
+//static int timex;
+
+static int androiddisplay_allocate_colours( int numColours, uint16_t *colour_values );
+static int androiddisplay_load_gfx_mode( void );
+
+static void printGLString(const char *name, GLenum s) {
+    const char *v = (const char *) glGetString(s);
+    LOGI("GL %s = %s\n", name, v);
+}
+
+int uidisplay_init( int width, int height ) {
+    //timex = machine_current->timex;
+
+    if( androiddisplay_load_gfx_mode() ) return 1;
+
+    /* We can now output error messages to our output device */
+    display_ui_initialised = 1;
+
+    return 0;
+}
+
+static int androiddisplay_allocate_colours( int numColours, uint16_t *colour_values ) {
+    int i;
+    uint8_t red, green, blue;
+
+    for( i = 0; i < numColours; i++ ) {
+
+          red = colour_palette[i].r;
+        green = colour_palette[i].g;
+         blue = colour_palette[i].b;
+
+        colour_values[i] = ( (red >> 3) << 11 ) | ( (green >> 2) << 5 ) | (blue >> 3);
+    }
+    
+    return 0;
+}
+
+static int androiddisplay_load_gfx_mode( void ) {
+    uint16_t *tmp_screen=NULL;
+    tmp_screen = (uint16_t*)malloc(512*512*2);
+    memset(tmp_screen, 0x30, 512*512*2);
+
+    /* GL Init */
+    printGLString("Version", GL_VERSION);
+    printGLString("Vendor", GL_VENDOR);
+    printGLString("Renderer", GL_RENDERER);
+    printGLString("Extensions", GL_EXTENSIONS);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (mScaling && mWidth!=image_width) {
+        glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    } else {
+        glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameterx(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    }
+    glTexEnvx(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glEnable(GL_TEXTURE_2D);
+    glDisable(GL_DITHER);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glDisable(GL_MULTISAMPLE);
+    glDisable(GL_CULL_FACE);
+    glShadeModel(GL_FLAT);
+    GLint crop[4] = { 0, image_height, image_width, -image_height };
+    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_CROP_RECT_OES, crop);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, tmp_screen);
+    glDrawTexiOES(0, 0, 1, mWidth, mHeight);
+    glFinish();
+    /* finish GL init */
+  
+    free(tmp_screen);  
+
+    androiddisplay_allocate_colours( 16, colour_values );
+
+    /* Redraw the entire screen... */
+    display_refresh_all();
+
+
+    return 0;
+}
+
+void uidisplay_frame_end( void ) {
+
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 512, 512, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, tmp_screen);
+    int ix, iy;
+    for (ix = 0; ix < RECTS_X; ix++) {
+        for (iy = 0; iy < RECTS_Y; iy++) {
+            if (upd_rects[ix][iy].set) {
+                glTexSubImage2D(GL_TEXTURE_2D, 0, ix*8, iy*8, 8, 8, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, upd_rects[ix][iy].data);
+                upd_rects[ix][iy].set = 0;
+            }
+        }
+    }
+    glDrawTexiOES(0, 0, 1, mWidth, mHeight);
+
+    needRedraw = 1;
+}
+
+/* Set one pixel in the display */
+void uidisplay_putpixel( int x, int y, int colour ) {
+    dx = (x%8);
+    dy = (y%8) << 3;    
+    x >>= 3;
+    y >>= 3;
+    upd_rects[x][y].set = 1;
+
+    upd_rects[x][y].data[dx+dy] = colour_values[ colour ];
+}
+
+/* Print the 8 pixels in `data' using ink colour `ink' and paper
+   colour `paper' to the screen at ( (8*x) , y ) */
+void uidisplay_plot8( int x, int y, libspectrum_byte data, libspectrum_byte ink, libspectrum_byte paper ) {
+    dy = (y%8) << 3;
+    y >>= 3;
+    upd_rects[x][y].set = 1;
+
+    upd_rects[x][y].data[0+dy] = ( data & 0x80 ) ? colour_values[ ink ] : colour_values[ paper ];
+    upd_rects[x][y].data[1+dy] = ( data & 0x40 ) ? colour_values[ ink ] : colour_values[ paper ];
+    upd_rects[x][y].data[2+dy] = ( data & 0x20 ) ? colour_values[ ink ] : colour_values[ paper ];
+    upd_rects[x][y].data[3+dy] = ( data & 0x10 ) ? colour_values[ ink ] : colour_values[ paper ];
+    upd_rects[x][y].data[4+dy] = ( data & 0x08 ) ? colour_values[ ink ] : colour_values[ paper ];
+    upd_rects[x][y].data[5+dy] = ( data & 0x04 ) ? colour_values[ ink ] : colour_values[ paper ];
+    upd_rects[x][y].data[6+dy] = ( data & 0x02 ) ? colour_values[ ink ] : colour_values[ paper ];
+    upd_rects[x][y].data[7+dy] = ( data & 0x01 ) ? colour_values[ ink ] : colour_values[ paper ];
+}
+
+/* Print the 16 pixels in `data' using ink colour `ink' and paper
+   colour `paper' to the screen at ( (16*x) , y ) */
+void uidisplay_plot16( int x, int y, libspectrum_word data, libspectrum_byte ink, libspectrum_byte paper ) {
+    y <<= 1;
+    x <<= 1;
+    dy = (y%8) << 3;
+    y >>= 3;
+
+    upd_rects[x][y].set = 1;
+    upd_rects[x+1][y].set = 1;
+    
+    int i;
+    for( i=0; i<2; i++ ) {
+      upd_rects[x][y].data[0+dy+i*8] = ( data & 0x8000 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x][y].data[1+dy+i*8] = ( data & 0x4000 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x][y].data[2+dy+i*8] = ( data & 0x2000 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x][y].data[3+dy+i*8] = ( data & 0x1000 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x][y].data[4+dy+i*8] = ( data & 0x0800 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x][y].data[5+dy+i*8] = ( data & 0x0400 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x][y].data[6+dy+i*8] = ( data & 0x0200 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x][y].data[7+dy+i*8] = ( data & 0x0100 ) ? colour_values[ ink ] : colour_values[ paper ];
+
+      upd_rects[x+1][y].data[0+dy+i*8] = ( data & 0x0080 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x+1][y].data[1+dy+i*8] = ( data & 0x0040 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x+1][y].data[2+dy+i*8] = ( data & 0x0020 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x+1][y].data[3+dy+i*8] = ( data & 0x0010 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x+1][y].data[4+dy+i*8] = ( data & 0x0008 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x+1][y].data[5+dy+i*8] = ( data & 0x0004 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x+1][y].data[6+dy+i*8] = ( data & 0x0002 ) ? colour_values[ ink ] : colour_values[ paper ];
+      upd_rects[x+1][y].data[7+dy+i*8] = ( data & 0x0001 ) ? colour_values[ ink ] : colour_values[ paper ];
+    }
+}
+
+int uidisplay_end( void ) {
+  display_ui_initialised = 0;
+    
+  return 0;
+}
+
+int uidisplay_hotswap_gfx_mode( void ) { return 0; }
+
+void uidisplay_area( int x, int y, int w, int h ) { }
+
+void uidisplay_frame_save( void ) { }
+
+void uidisplay_frame_restore( void ) { } 
+

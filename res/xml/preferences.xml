@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:androidemu="http://androidemu.com/apk/res/android">
+
+	<PreferenceCategory android:title="@string/emulator_state">
+		<PreferenceScreen android:key="loadFile"
+			android:title="@string/load_file" />
+		<PreferenceScreen android:key="saveSnapshot"
+			android:title="@string/save_snapshot" />
+		<ListPreference android:key="currentMachine"
+			android:title="@string/current_machine" android:entries="@array/machine_entries"
+			android:entryValues="@array/machine_entryValues"
+			android:defaultValue="48" />
+		<Preference android:key="exit" android:title="@string/exit" />
+	</PreferenceCategory>
+
+	<PreferenceCategory android:title="@string/control_settings">
+		<ListPreference android:key="onScreenControls"
+			android:title="@string/onscreen_controls" android:entries="@array/control_entries"
+			android:entryValues="@array/control_entries" android:defaultValue="Keyboard" />
+		<PreferenceScreen android:key="defineKeys"
+			android:title="@string/define_keys" />
+		<com.drodin.zxdroid.menu.TrackballSens
+			android:key="trackballSensitivity" android:title="@string/trackball_sensitivity"
+			androidemu:minValue="1" androidemu:maxValue="10"
+			android:defaultValue="3" />
+	</PreferenceCategory>
+
+	<PreferenceCategory android:title="@string/audio_settings">
+		<CheckBoxPreference android:key="soundEnabled"
+			android:title="@string/enable_sound" android:defaultValue="false" />
+	</PreferenceCategory>
+
+	<PreferenceCategory android:title="@string/video_settings">
+		<CheckBoxPreference android:key="smoothScaling"
+			android:title="@string/smooth_scaling" android:defaultValue="true" />
+	</PreferenceCategory>
+
+</PreferenceScreen>
