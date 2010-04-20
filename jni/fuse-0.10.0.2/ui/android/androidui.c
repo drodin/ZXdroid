@@ -129,46 +129,16 @@ ui_end( void )
   return 0;
 }
 
-int
-ui_mouse_grab( int startup )
-{
-    /*
-  if( settings_current.full_screen ) {
-    ANDROID_WarpMouse( 128, 128 );
-    return 1;
-  }
-  if( startup ) return 0;
-
-  switch( ANDROID_WM_GrabInput( ANDROID_GRAB_ON ) ) {
-  case ANDROID_GRAB_ON:
-  case ANDROID_GRAB_FULLSCREEN:
-    ANDROID_ShowCursor( ANDROID_DISABLE );
-    ANDROID_WarpMouse( 128, 128 );
-    return 1;
-  default:
-    ui_error( UI_ERROR_WARNING, "Mouse grab failed" );
+int ui_statusbar_update_speed( float speed ) { 
+    LOGI("%f", speed);
     return 0;
-  }
-  */
-  return 1;
-}
-
-int
-ui_mouse_release( int suspend )
-{
-    /*
-  if( settings_current.full_screen ) return !suspend;
-
-  ANDROID_WM_GrabInput( ANDROID_GRAB_OFF );
-  ANDROID_ShowCursor( ANDROID_ENABLE );
-  */
-  return 0;
 }
 
 /* UNDEFINED FUNCTIONS */
 
+int ui_mouse_grab( int startup ) { return 1; }
+int ui_mouse_release( int suspend ) { return 0; }
 int ui_statusbar_update( ui_statusbar_item item, ui_statusbar_state state ) { return 0; }
-int ui_statusbar_update_speed( float speed ) { return 0; }
 int ui_widgets_reset( void ) { return 0; }
 int menu_select_roms_with_title( const char *title, size_t start, size_t count ) { return 0; }
 scaler_type menu_get_scaler( scaler_available_fn selector ) { return 0; }

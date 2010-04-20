@@ -70,7 +70,7 @@ configure:2758: $? = 0
 configure:2765: arm-eabi-gcc -v >&5
 Using built-in specs.
 Target: arm-eabi
-Configured with: /tmp/ndk-toolchain-966/src/build/../gcc/gcc-4.2.1/configure --prefix=/tmp/ndk-toolchain-966/build/prebuilt/linux-x86/arm-eabi-4.2.1 --target=arm-eabi --host=x86_64-unknown-linux-gnu --build=x86_64-unknown-linux-gnu --enable-languages=c,c++ --with-gmp=/tmp/ndk-toolchain-966/arm-eabi-4.2.1/temp-install --with-mpfr=/tmp/ndk-toolchain-966/arm-eabi-4.2.1/temp-install --disable-libssp --enable-threads --disable-nls --disable-libmudflap --disable-libgomp --disable-libstdc__-v3 --disable-sjlj-exceptions --disable-shared --disable-tls --with-float=soft --with-fpu=vfp --with-arch=armv5te --enable-target-optspace --with-abi=aapcs --disable-nls --prefix=/tmp/ndk-toolchain-966/build/prebuilt/linux-x86/arm-eabi-4.2.1 --with-sysroot=/opt/digit/android/repo/eclair/development/ndk/build/platforms/android-3/arch-arm --with-binutils-version=2.17 --with-gcc-version=4.2.1 --with-gdb-version=6.6 --program-transform-name=s&^&arm-eabi-&
+Configured with: /opt/digit/android/git/android-ndk/out/arm-eabi-4.2.1/toolchain/src/gcc-4.2.1/configure --prefix=/opt/digit/android/git/android-ndk/build/prebuilt/linux-x86/arm-eabi-4.2.1 --target=arm-eabi --host=x86_64-unknown-linux-gnu --build=x86_64-unknown-linux-gnu --enable-languages=c,c++ --disable-libssp --enable-threads --disable-nls --disable-libmudflap --disable-libgomp --disable-libstdc__-v3 --disable-sjlj-exceptions --disable-shared --with-float=soft --with-fpu=vfp --with-arch=armv5te --enable-target-optspace --with-abi=aapcs --disable-nls --prefix=/opt/digit/android/git/android-ndk/build/prebuilt/linux-x86/arm-eabi-4.2.1 --with-sysroot=/opt/digit/android/git/android-ndk/build/platforms/cupcake/arch-arm --program-transform-name=s,^,arm-eabi-,
 Thread model: single
 gcc version 4.2.1
 configure:2768: $? = 0
@@ -239,7 +239,7 @@ configure:5315: $? = 0
 configure:5322: arm-eabi-g++ -v >&5
 Using built-in specs.
 Target: arm-eabi
-Configured with: /tmp/ndk-toolchain-966/src/build/../gcc/gcc-4.2.1/configure --prefix=/tmp/ndk-toolchain-966/build/prebuilt/linux-x86/arm-eabi-4.2.1 --target=arm-eabi --host=x86_64-unknown-linux-gnu --build=x86_64-unknown-linux-gnu --enable-languages=c,c++ --with-gmp=/tmp/ndk-toolchain-966/arm-eabi-4.2.1/temp-install --with-mpfr=/tmp/ndk-toolchain-966/arm-eabi-4.2.1/temp-install --disable-libssp --enable-threads --disable-nls --disable-libmudflap --disable-libgomp --disable-libstdc__-v3 --disable-sjlj-exceptions --disable-shared --disable-tls --with-float=soft --with-fpu=vfp --with-arch=armv5te --enable-target-optspace --with-abi=aapcs --disable-nls --prefix=/tmp/ndk-toolchain-966/build/prebuilt/linux-x86/arm-eabi-4.2.1 --with-sysroot=/opt/digit/android/repo/eclair/development/ndk/build/platforms/android-3/arch-arm --with-binutils-version=2.17 --with-gcc-version=4.2.1 --with-gdb-version=6.6 --program-transform-name=s&^&arm-eabi-&
+Configured with: /opt/digit/android/git/android-ndk/out/arm-eabi-4.2.1/toolchain/src/gcc-4.2.1/configure --prefix=/opt/digit/android/git/android-ndk/build/prebuilt/linux-x86/arm-eabi-4.2.1 --target=arm-eabi --host=x86_64-unknown-linux-gnu --build=x86_64-unknown-linux-gnu --enable-languages=c,c++ --disable-libssp --enable-threads --disable-nls --disable-libmudflap --disable-libgomp --disable-libstdc__-v3 --disable-sjlj-exceptions --disable-shared --with-float=soft --with-fpu=vfp --with-arch=armv5te --enable-target-optspace --with-abi=aapcs --disable-nls --prefix=/opt/digit/android/git/android-ndk/build/prebuilt/linux-x86/arm-eabi-4.2.1 --with-sysroot=/opt/digit/android/git/android-ndk/build/platforms/cupcake/arch-arm --program-transform-name=s,^,arm-eabi-,
 Thread model: single
 gcc version 4.2.1
 configure:5325: $? = 0
@@ -596,7 +596,7 @@ configure:20502: result: no
 configure:20531: checking for _snprintf
 configure:20587: arm-eabi-gcc -o conftest -nostdlib -I/opt/android-ndk/build/platforms/android-4/arch-arm/usr/include/ -Wl,-rpath-link=/opt/android-ndk/build/platforms/android-4/arch-arm/usr/lib/ -L/opt/android-ndk/build/platforms/android-4/arch-arm/usr/lib/ conftest.c -lc  >&5
 /opt/android-ndk/build/prebuilt/linux-x86/arm-eabi-4.2.1/bin/../lib/gcc/arm-eabi/4.2.1/../../../../arm-eabi/bin/ld: warning: cannot find entry symbol _start; defaulting to 000082a0
-/tmp/cc2XRW8S.o: In function `main':
+/tmp/cckPikXx.o: In function `main':
 conftest.c:(.text+0xc): undefined reference to `_snprintf'
 collect2: ld returned 1 exit status
 configure:20593: $? = 1
@@ -667,7 +667,7 @@ configure:20611: result: no
 configure:20531: checking for _stricmp
 configure:20587: arm-eabi-gcc -o conftest -nostdlib -I/opt/android-ndk/build/platforms/android-4/arch-arm/usr/include/ -Wl,-rpath-link=/opt/android-ndk/build/platforms/android-4/arch-arm/usr/lib/ -L/opt/android-ndk/build/platforms/android-4/arch-arm/usr/lib/ conftest.c -lc  >&5
 /opt/android-ndk/build/prebuilt/linux-x86/arm-eabi-4.2.1/bin/../lib/gcc/arm-eabi/4.2.1/../../../../arm-eabi/bin/ld: warning: cannot find entry symbol _start; defaulting to 000082a0
-/tmp/cc2udzu2.o: In function `main':
+/tmp/ccq9Xg2H.o: In function `main':
 conftest.c:(.text+0xc): undefined reference to `_stricmp'
 collect2: ld returned 1 exit status
 configure:20593: $? = 1
@@ -738,7 +738,7 @@ configure:20611: result: no
 configure:20531: checking for _strnicmp
 configure:20587: arm-eabi-gcc -o conftest -nostdlib -I/opt/android-ndk/build/platforms/android-4/arch-arm/usr/include/ -Wl,-rpath-link=/opt/android-ndk/build/platforms/android-4/arch-arm/usr/lib/ -L/opt/android-ndk/build/platforms/android-4/arch-arm/usr/lib/ conftest.c -lc  >&5
 /opt/android-ndk/build/prebuilt/linux-x86/arm-eabi-4.2.1/bin/../lib/gcc/arm-eabi/4.2.1/../../../../arm-eabi/bin/ld: warning: cannot find entry symbol _start; defaulting to 000082a0
-/tmp/ccEb497b.o: In function `main':
+/tmp/ccgxfaXR.o: In function `main':
 conftest.c:(.text+0xc): undefined reference to `_strnicmp'
 collect2: ld returned 1 exit status
 configure:20593: $? = 1
@@ -837,7 +837,7 @@ configure:20760: result: yes
 configure:20768: checking for library containing compress2
 configure:20809: arm-eabi-gcc -o conftest -nostdlib -I/opt/android-ndk/build/platforms/android-4/arch-arm/usr/include/ -Wl,-rpath-link=/opt/android-ndk/build/platforms/android-4/arch-arm/usr/lib/ -L/opt/android-ndk/build/platforms/android-4/arch-arm/usr/lib/ conftest.c -lc  >&5
 /opt/android-ndk/build/prebuilt/linux-x86/arm-eabi-4.2.1/bin/../lib/gcc/arm-eabi/4.2.1/../../../../arm-eabi/bin/ld: warning: cannot find entry symbol _start; defaulting to 000082a0
-/tmp/ccO74KC5.o: In function `main':
+/tmp/ccaLTisJ.o: In function `main':
 conftest.c:(.text+0xc): undefined reference to `compress2'
 collect2: ld returned 1 exit status
 configure:20815: $? = 1
@@ -1313,18 +1313,18 @@ lt_lt_cv_sys_global_symbol_to_cdecl='"sed -n -e '\''s/^. .* \\(.*\\)\$/extern in
 ## Output variables. ##
 ## ----------------- ##
 
-ACLOCAL='${SHELL} /opt/android-ndk/apps/zxdroid/jni/libspectrum-0.5.0.1/missing --run aclocal-1.10'
+ACLOCAL='${SHELL} /opt/android-ndk/apps/ZXdroid/jni/libspectrum-0.5.0.1/missing --run aclocal-1.10'
 AMDEPBACKSLASH='\'
 AMDEP_FALSE='#'
 AMDEP_TRUE=''
-AMTAR='${SHELL} /opt/android-ndk/apps/zxdroid/jni/libspectrum-0.5.0.1/missing --run tar'
+AMTAR='${SHELL} /opt/android-ndk/apps/ZXdroid/jni/libspectrum-0.5.0.1/missing --run tar'
 AR='arm-eabi-ar'
 AUDIOFILE_CFLAGS=''
 AUDIOFILE_CONFIG='no'
 AUDIOFILE_LIBS=''
-AUTOCONF='${SHELL} /opt/android-ndk/apps/zxdroid/jni/libspectrum-0.5.0.1/missing --run autoconf'
-AUTOHEADER='${SHELL} /opt/android-ndk/apps/zxdroid/jni/libspectrum-0.5.0.1/missing --run autoheader'
-AUTOMAKE='${SHELL} /opt/android-ndk/apps/zxdroid/jni/libspectrum-0.5.0.1/missing --run automake-1.10'
+AUTOCONF='${SHELL} /opt/android-ndk/apps/ZXdroid/jni/libspectrum-0.5.0.1/missing --run autoconf'
+AUTOHEADER='${SHELL} /opt/android-ndk/apps/ZXdroid/jni/libspectrum-0.5.0.1/missing --run autoheader'
+AUTOMAKE='${SHELL} /opt/android-ndk/apps/ZXdroid/jni/libspectrum-0.5.0.1/missing --run automake-1.10'
 AWK='gawk'
 CC='arm-eabi-gcc'
 CCDEPMODE='depmode=gcc3'
@@ -1365,7 +1365,7 @@ LIBS='-lz -lc '
 LIBTOOL='$(SHELL) $(top_builddir)/libtool'
 LN_S='ln -s'
 LTLIBOBJS=''
-MAKEINFO='${SHELL} /opt/android-ndk/apps/zxdroid/jni/libspectrum-0.5.0.1/missing --run makeinfo'
+MAKEINFO='${SHELL} /opt/android-ndk/apps/ZXdroid/jni/libspectrum-0.5.0.1/missing --run makeinfo'
 NMEDIT=''
 OBJEXT='o'
 PACKAGE='libspectrum'
@@ -1417,7 +1417,7 @@ host_vendor='unknown'
 htmldir='${docdir}'
 includedir='${prefix}/include'
 infodir='${datarootdir}/info'
-install_sh='$(SHELL) /opt/android-ndk/apps/zxdroid/jni/libspectrum-0.5.0.1/install-sh'
+install_sh='$(SHELL) /opt/android-ndk/apps/ZXdroid/jni/libspectrum-0.5.0.1/install-sh'
 libdir='${exec_prefix}/lib'
 libexecdir='${exec_prefix}/libexec'
 localedir='${datarootdir}/locale'
