@@ -1,7 +1,7 @@
 /* z80.c: Routines for handling .z80 snapshots
-   Copyright (c) 2001-2004 Philip Kendall, Darren Salt, Fredrick Meunier
+   Copyright (c) 2001-2009 Philip Kendall, Darren Salt, Fredrick Meunier
 
-   $Id: z80.c 3784 2008-10-22 12:36:07Z fredm $
+   $Id: z80.c 4032 2009-06-10 11:09:44Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -109,6 +109,12 @@ static const libspectrum_word if2_left_f     = '5';
 /* The signature used to designate the .slt extensions */
 static libspectrum_byte slt_signature[] = "\0\0\0SLT";
 static size_t slt_signature_length = 6;
+
+/* Bits used in extended header to flag that a Fuller Box is in use */
+static const libspectrum_byte fuller_box_flags = 0x44;
+
+/* Bits used in extended header to flag that a Melodik is in use */
+static const libspectrum_byte melodik_flags = 0x04;
 
 static libspectrum_error
 read_header( const libspectrum_byte *buffer, libspectrum_snap *snap,
@@ -329,7 +335,7 @@ read_header( const libspectrum_byte *buffer, libspectrum_snap *snap,
          b.. Any valid 128k identifier should be taken as +2
          c.. Any valid +3 identifier (7 or 8) should be taken as +2A
 
-       Support for Fuller Box / AY sound in 48k mode (not implemented)
+       Support for Fuller Box / AY sound in 48k mode
        
        Spectaculator recognises xzx's extension of setting bit 2 of byte 37 to
        specify AY sound in 48k mode. In addition, if this and also bit 6 is
@@ -353,6 +359,12 @@ read_header( const libspectrum_byte *buffer, libspectrum_snap *snap,
       }
     }
 
+    if( ( extra_header[5] & fuller_box_flags ) == fuller_box_flags ) {
+      libspectrum_snap_set_fuller_box_active( snap, 1 );
+    } else if( ( extra_header[5] & melodik_flags ) == melodik_flags ) {
+      libspectrum_snap_set_melodik_active( snap, 1 );
+    }
+
     capabilities =
       libspectrum_machine_capabilities( libspectrum_snap_machine( snap ) );
 
@@ -366,7 +378,9 @@ read_header( const libspectrum_byte *buffer, libspectrum_snap *snap,
       libspectrum_snap_set_out_scld_dec( snap, extra_header[4] );
     }
 
-    if( capabilities & LIBSPECTRUM_MACHINE_CAPABILITY_AY ) {
+    if( libspectrum_snap_fuller_box_active( snap ) ||
+        libspectrum_snap_melodik_active( snap ) ||
+        capabilities & LIBSPECTRUM_MACHINE_CAPABILITY_AY ) {
       libspectrum_snap_set_out_ay_registerport( snap, extra_header[ 6] );
       for( i = 0; i < 16; i++ ) {
 	libspectrum_snap_set_ay_registers( snap, i, extra_header[ 7 + i ] );
@@ -1250,6 +1264,7 @@ write_extended_header( libspectrum_byte **buffer, libspectrum_byte **ptr,
 		       size_t *length, int *flags, libspectrum_snap *snap )
 {
   int i, bottom_16kb_ram;
+  libspectrum_byte hardware_flag = 0;      /* No special emulation features */
 
   libspectrum_dword quarter_states;
 
@@ -1344,10 +1359,22 @@ write_extended_header( libspectrum_byte **buffer, libspectrum_byte **ptr,
   /* Support 16K snapshots via Spectaculator's extension; see the
      comment in read_header for details */
   if( libspectrum_snap_machine( snap ) == LIBSPECTRUM_MACHINE_16 ) {
-    *(*ptr)++ = 0x80;
-  } else {
-    *(*ptr)++ = '\0';		/* No special emulation features */
+    hardware_flag |= 0x80;
   }
+
+  /* Support Fuller Box in snapshots via Spectaculator's extension; see the
+     comment in read_header for details */
+  if( libspectrum_snap_fuller_box_active( snap ) ) {
+    /* Fuller is set by having bit 2 and 6 on */
+    hardware_flag |= fuller_box_flags;
+  }
+
+  if( libspectrum_snap_melodik_active( snap ) ) {
+    /* Melodik is set by having bit 2 on */
+    hardware_flag |= melodik_flags;
+  }
+
+  *(*ptr)++ = hardware_flag;
 
   *(*ptr)++ = libspectrum_snap_out_ay_registerport( snap );
   for( i = 0; i < 16; i++ )

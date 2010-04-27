@@ -28,8 +28,10 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "zxdroid", __VA_ARGS__)
 
 extern JNIEnv* cenv;
+extern jclass nclass;
 
-extern int global_event_type;
-extern int global_event_value;
+extern int needRedraw;
 
-int mWidth, mHeight, mScaling;
+extern int global_event_type, global_event_value;
+
+extern int mWidth, mHeight, mScaling;

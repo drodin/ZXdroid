@@ -46,7 +46,7 @@ public class MainAudio {
 		mAudio.play();
 		return bufSize;
 	}
-
+ 
 	public static void destroy() {
 		if( mAudio != null )
 		{

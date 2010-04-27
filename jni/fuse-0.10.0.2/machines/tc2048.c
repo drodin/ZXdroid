@@ -1,8 +1,8 @@
 /* tc2048.c: Timex TC2048 specific routines
    Copyright (c) 1999-2005 Philip Kendall
-   Copyright (c) 2002-2004 Fredrick Meunier
+   Copyright (c) 2002-2009 Fredrick Meunier
 
-   $Id: tc2048.c 3566 2008-03-18 12:59:16Z pak21 $
+   $Id: tc2048.c 4038 2009-06-24 14:25:23Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 
 #include <libspectrum.h>
 
+#include "disk/beta.h"
 #include "joystick.h"
 #include "machine.h"
 #include "machines.h"
@@ -96,7 +97,6 @@ int tc2048_init( fuse_machine_info *machine )
   machine->memory_map = tc2068_memory_map;
 
   return 0;
-
 }
 
 static int
@@ -115,7 +115,13 @@ tc2048_reset( void )
   periph_setup_interface1( PERIPH_PRESENT_OPTIONAL );
   periph_setup_interface2( PERIPH_PRESENT_OPTIONAL );
   periph_setup_plusd( PERIPH_PRESENT_OPTIONAL );
+  periph_setup_beta128( PERIPH_PRESENT_OPTIONAL );
+  periph_setup_fuller( PERIPH_PRESENT_OPTIONAL );
+  periph_setup_melodik( PERIPH_PRESENT_OPTIONAL );
   periph_update();
+
+  periph_register_beta128();
+  beta_builtin = 0;
 
   for( i = 0; i < 8; i++ ) {
 

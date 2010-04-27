@@ -1,7 +1,7 @@
 /* ula.c: ULA routines
    Copyright (c) 1999-2008 Philip Kendall, Darren Salt
 
-   $Id: ula.c 3532 2008-02-28 14:21:50Z pak21 $
+   $Id: ula.c 4021 2009-05-29 13:39:51Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -93,12 +93,7 @@ ula_write( libspectrum_word port GCC_UNUSED, libspectrum_byte b )
   last_byte = b;
 
   display_set_lores_border( b & 0x07 );
-  sound_beeper( 0, b & 0x10 );
-  /* FIXME: I don't think we should have to worry about whether the tape
-     is playing here, but if we don't do this and use normal speed tape
-     loading with tape noise, this will intefere with the generation of
-     the normal loading noises at the moment */
-  if( !tape_playing ) sound_beeper( 1, b & 0x8 );
+  sound_beeper( (!!(b & 0x10) << 1) + ( !(b & 0x8) | tape_microphone ) );
 
   /* FIXME: shouldn't really be using the memory capabilities here */
 

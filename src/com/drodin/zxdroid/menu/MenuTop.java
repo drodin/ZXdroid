@@ -54,17 +54,16 @@ implements Preference.OnPreferenceChangeListener {
 
 		settings = PreferenceManager.getDefaultSharedPreferences(this);
 
-		if (NativeLib.spectrumScreenWidth == NativeLib.mWidth)
-			findPreference("smoothScaling").setEnabled(false);
-		else
-			findPreference("smoothScaling").setOnPreferenceChangeListener(this);
+		findPreference("frameSkip").setOnPreferenceChangeListener(this);
+		findPreference("smoothScaling").setOnPreferenceChangeListener(this);
 
 		findPreference("soundEnabled").setOnPreferenceChangeListener(this);
 
 		findPreference("onScreenControls").setSummary(NativeLib.onScreenControls);
 		findPreference("onScreenControls").setOnPreferenceChangeListener(this);
+		
+		findPreference("interceptMenuBack").setOnPreferenceChangeListener(this);
 
-		NativeLib.currentMachine = NativeLib.cmachine();
 		SharedPreferences.Editor editor = settings.edit();
 		editor.putString("currentMachine", NativeLib.currentMachine);
 		editor.commit();
@@ -81,6 +80,7 @@ implements Preference.OnPreferenceChangeListener {
 		super.onActivityResult(requestCode, resultCode, data);
 		if (resultCode == RESULT_OK && requestCode == 0) {
 			setResult(RESULT_OK, data);
+			finish();
 		} 
 		else if (requestCode == 1) {
 			SharedPreferences.Editor editor = settings.edit();
@@ -91,7 +91,6 @@ implements Preference.OnPreferenceChangeListener {
 			editor.putString("definedKeys", definedKeysStr);
 			editor.commit();
 		}
-		finish();
 	}
 
 	@Override
@@ -109,11 +108,18 @@ implements Preference.OnPreferenceChangeListener {
 		if (pref.getKey().equals("defineKeys")) {
 			startActivityForResult(new Intent(this, DefineKeys.class), 1);
 		}
+		if (pref.getKey().equals("help")) {
+			startActivityForResult(new Intent(this, HelpView.class), 0);
+		}
 		return super.onPreferenceTreeClick(screen, pref);
 	}
 
 	@Override
 	public boolean onPreferenceChange(Preference preference, Object newValue) {
+		if (preference.getKey().equals("frameSkip")) {
+			NativeLib.frameSkip = (newValue.equals(false))?false:true;
+			finish();
+		}
 		if (preference.getKey().equals("smoothScaling")) {
 			NativeLib.smoothScaling = (newValue.equals(false))?false:true;
 			finish();
@@ -121,6 +127,14 @@ implements Preference.OnPreferenceChangeListener {
 		if (preference.getKey().equals("soundEnabled")) {
 			NativeLib.soundEnabled = (newValue.equals(false))?false:true;
 			finish();
+		}
+		if (preference.getKey().equals("interceptMenuBack")) {
+			NativeLib.interceptMenuBack = (newValue.equals(false))?false:true;
+			if (newValue.equals(true)) {
+				preference.setSummary(getString(R.string.intercept_warning));
+			} else {
+				preference.setSummary(null);
+			}
 		}
 		if (preference.getKey().equals("onScreenControls")) {
 			if (!NativeLib.onScreenControls.equals(newValue.toString())) {

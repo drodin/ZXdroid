@@ -1,7 +1,7 @@
 /* ay.h: AY-8-3912 routines
-   Copyright (c) 1999-2004 Philip Kendall
+   Copyright (c) 1999-2009 Philip Kendall
 
-   $Id: ay.h 2993 2007-06-17 13:54:49Z pak21 $
+   $Id: ay.h 4030 2009-06-07 14:38:38Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,5 +41,7 @@ libspectrum_byte ay_registerport_read( libspectrum_word port, int *attached );
 void ay_registerport_write( libspectrum_word port, libspectrum_byte b );
 
 void ay_dataport_write( libspectrum_word port, libspectrum_byte b );
+
+void ay_state_from_snapshot( libspectrum_snap *snap );
 
 #endif			/* #ifndef FUSE_AY_H */

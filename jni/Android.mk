@@ -5,7 +5,7 @@ FUSE_PATH := $(ROOT_PATH)/fuse-0.10.0.2
 LIBSPECTRUM_PATH := $(ROOT_PATH)/libspectrum-0.5.0.1
 
 FUSEDATADIR := /data/data/com.drodin.zxdroid/files
-CURRENT_SNAPSHOT := current.sna
+LAST_SNAPSHOT := last.snapshot
 
 PACKAGE_PATH := com/drodin/zxdroid
 LIB_CLASS    := NativeLib
@@ -25,7 +25,7 @@ LOCAL_PATH := $(FUSE_PATH)
 LOCAL_CFLAGS := \
     -DHAVE_CONFIG_H \
     -DFUSEDATADIR=\"$(FUSEDATADIR)\" \
-    -DCURRENT_SNAPSHOT=\"$(FUSEDATADIR)/$(CURRENT_SNAPSHOT)\" \
+    -DLAST_SNAPSHOT=\"$(FUSEDATADIR)/$(LAST_SNAPSHOT)\" \
     -DLIB_CLASS=\"$(PACKAGE_PATH)/$(LIB_CLASS)\" \
     -DAUDIO_CLASS=\"$(PACKAGE_PATH)/$(AUDIO_CLASS)\" \
     -I$(FUSE_PATH)/ui/android \
@@ -38,6 +38,7 @@ LOCAL_SRC_FILES := \
 	display.c \
 	divide.c \
 	event.c \
+    fuller.c \
 	fuse.c \
 	ide.c \
 	if1.c \
@@ -48,6 +49,7 @@ LOCAL_SRC_FILES := \
 	keyboard.c \
 	loader.c \
 	machine.c \
+    melodik.c \
 	memory.c \
 	mempool.c \
 	menu.c \
@@ -98,6 +100,7 @@ LOCAL_SRC_FILES := \
     machines/tc2048.c \
     machines/tc2068.c \
     machines/ts2068.c \
+    sound/blipbuffer.c \
     timer/timer.c \
     ui/android/android.c \
     ui/android/androiddisplay.c \
@@ -112,7 +115,7 @@ LOCAL_SRC_FILES := \
 
 LOCAL_STATIC_LIBRARIES := spectrum
 
-LOCAL_LDLIBS := -llog -lz -lGLESv1_CM
+LOCAL_LDLIBS := -llog -lm -lz -lGLESv1_CM
 
 include $(BUILD_SHARED_LIBRARY)
 

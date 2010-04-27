@@ -1,7 +1,7 @@
 /* periph.h: code for handling peripherals
-   Copyright (c) 2004 Philip Kendall
+   Copyright (c) 2004-2009 Philip Kendall
 
-   $Id: periph.h 3648 2008-06-01 17:42:03Z pak21 $
+   $Id: periph.h 4060 2009-07-30 13:21:38Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -98,12 +98,20 @@ extern int periph_plusd_active;
 /* Is the Beta 128 active */
 extern int periph_beta128_active;
 
+/* Is the Fuller Box active */
+extern int periph_fuller_active;
+
+/* Is the Melodik active */
+extern int periph_melodik_active;
+
 int periph_setup( const periph_t *peripherals_list, size_t n );
 void periph_setup_kempston( periph_present present );
 void periph_setup_interface1( periph_present present );
 void periph_setup_interface2( periph_present present );
 void periph_setup_plusd( periph_present present );
 void periph_setup_beta128( periph_present present );
+void periph_setup_fuller( periph_present present );
+void periph_setup_melodik( periph_present present );
 void periph_update( void );
 
 void periph_register_beta128( void );

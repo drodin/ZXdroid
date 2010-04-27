@@ -20,7 +20,7 @@
 
    E-mail: rodin.dmitry@gmail.com
 
-*/
+ */
 
 package com.drodin.zxdroid;
 
@@ -50,7 +50,7 @@ public class MainView extends GLSurfaceView {
 
 		setFocusable(true);
 		setFocusableInTouchMode(true);
-		requestFocus();
+		//requestFocus();
 
 		setRenderer(new MainRenderer());
 		setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
@@ -60,23 +60,42 @@ public class MainView extends GLSurfaceView {
 	public boolean onTouchEvent (MotionEvent event) {
 		if (
 				event.getX()>NativeLib.menuTouchDelta && 
-				event.getX()<(float)NativeLib.mWidth-NativeLib.menuTouchDelta &&
+				event.getX()<(float)getWidth()-NativeLib.menuTouchDelta &&
 				event.getY()>NativeLib.menuTouchDelta &&
-				event.getY()<(float)NativeLib.mHeight-NativeLib.menuTouchDelta
-		)
-			MainActivity.currentInstance.showMenu();
+				event.getY()<(float)getHeight()-NativeLib.menuTouchDelta
+		) {
+			if (NativeLib.interceptMenuBack)
+				MainActivity.currentInstance.showMenu();
+			else
+				MainActivity.currentInstance.showSelectControl();
+		}
 		return true;
 	}
 
 	@Override
-	public boolean onKeyPreIme (int keyCode, KeyEvent event) {
+	public boolean dispatchKeyEventPreIme (KeyEvent event) {
+		final int keyCode = event.getKeyCode();
 		if (event.getRepeatCount() == 0 && keyCode > 0 && keyCode < NativeLib.androidKeys.length) {
-			NativeLib.eventQueue.add(
-					((event.getAction() == KeyEvent.ACTION_DOWN)?NativeLib.KEY_PRESS:NativeLib.KEY_RELEASE)
-					+ ((NativeLib.definiedKeys[keyCode]==0)?keyCode:NativeLib.definiedKeys[keyCode])
-			);
-		}
-		return true;
+			if (!NativeLib.interceptMenuBack && keyCode==KeyEvent.KEYCODE_MENU) {
+				MainActivity.currentInstance.showMenu();
+				return true;
+			} else if (!NativeLib.interceptMenuBack && keyCode==KeyEvent.KEYCODE_BACK) {
+				return false;
+			} else if (keyCode==KeyEvent.KEYCODE_VOLUME_UP && 
+					NativeLib.definiedKeys[KeyEvent.KEYCODE_VOLUME_UP]==0 && NativeLib.soundEnabled) {
+				return false;
+			} else if (keyCode==KeyEvent.KEYCODE_VOLUME_DOWN && 
+					NativeLib.definiedKeys[KeyEvent.KEYCODE_VOLUME_DOWN]==0 && NativeLib.soundEnabled) {
+				return false;
+			} else {
+				NativeLib.eventQueue.add(
+						((event.getAction() == KeyEvent.ACTION_DOWN)?NativeLib.KEY_PRESS:NativeLib.KEY_RELEASE)
+						+ ((NativeLib.definiedKeys[keyCode]==0)?keyCode:NativeLib.definiedKeys[keyCode])
+				);
+				return true;
+			}
+		} else
+			return true;
 	}
 
 	@Override
@@ -207,18 +226,28 @@ public class MainView extends GLSurfaceView {
 			if (trackballUsed)
 				finishTrackballEvents();
 
-			if (NativeLib.eventQueue.size()<=0) {
-				NativeLib.render(0);
-			} else {
+			if (NativeLib.eventQueue.size()>0)
 				NativeLib.render(NativeLib.eventQueue.remove(0));
-			}
+			else
+				NativeLib.render(0);
 
 			requestRender();
+
 		}
 
 		@Override
 		public void onSurfaceChanged(GL10 gl, int width, int height) {
-			NativeLib.resize(NativeLib.mWidth, NativeLib.mHeight, NativeLib.smoothScaling);
+			NativeLib.resize(width, height, NativeLib.smoothScaling);
+			if (MainActivity.firstRun) {
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				MainActivity.currentInstance.showWelcomeMenu();
+				MainActivity.firstRun = false;
+			}
 		}
 
 		@Override

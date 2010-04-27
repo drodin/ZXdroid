@@ -1,7 +1,7 @@
 /* spec48.c: Spectrum 48K specific routines
-   Copyright (c) 1999-2007 Philip Kendall
+   Copyright (c) 1999-2009 Philip Kendall
 
-   $Id: spec48.c 3566 2008-03-18 12:59:16Z pak21 $
+   $Id: spec48.c 4038 2009-06-24 14:25:23Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 
 #include <libspectrum.h>
 
+#include "disk/beta.h"
 #include "joystick.h"
 #include "machine.h"
 #include "memory.h"
@@ -77,7 +78,6 @@ int spec48_init( fuse_machine_info *machine )
   machine->memory_map = spec48_memory_map;
 
   return 0;
-
 }
 
 static int
@@ -95,7 +95,13 @@ spec48_reset( void )
   periph_setup_interface1( PERIPH_PRESENT_OPTIONAL );
   periph_setup_interface2( PERIPH_PRESENT_OPTIONAL );
   periph_setup_plusd( PERIPH_PRESENT_OPTIONAL );
+  periph_setup_beta128( PERIPH_PRESENT_OPTIONAL );
+  periph_setup_fuller( PERIPH_PRESENT_OPTIONAL );
+  periph_setup_melodik( PERIPH_PRESENT_OPTIONAL );
   periph_update();
+
+  periph_register_beta128();
+  beta_builtin = 0;
 
   memory_current_screen = 5;
   memory_screen_mask = 0xffff;

@@ -1,0 +1,27 @@
+﻿Welcome to ZXdroid - ZX Spectrum Emulator for Android platform by Dmitry Rodin, based on FUSE (the Free Unix Spectrum Emulator) by Philip Kenall.
+
+This emulator can run ZX Spectrum games and applications in various file formats: tapes, snapshots, cartridges & disks. Lots of them you can find at www.worldofspectrum.com in the Archive directory. Download game files and place them on your SD Card.
+
+To get started push 'Menu' button on your phone.
+
+To run a game you have to load its file through 'Menu' > 'Load file'.
+
+If you want to save your current state during the game process, you can do it in 'Menu' > 'Save snapshot'
+
+If your game file doesn't load automatically for some reasons, you can select the Spectrum model under 'Menu' > 'Select machine' and then try to load it once more.
+
+There are two types of controls: on screen touch controls, and hardware keys controls, you can use one of them or combine both.
+
+To switch on screen controls: touch spectrum screen and select appropriate type, or go to 'Menu' > 'On screen controls' and select preferred type there.
+
+To define hardware keys to match some spectrum keys go to 'Menu' > 'Define keys'. You can intercept 'Menu' and 'Back' hardware keys as well, in this case you have to touch spectrum screen to access menu.
+
+If you have trackball it will acts as Dpad you can adjust its sensitivity in the 'Menu' > 'Trackball sensitivity'.
+
+ZXdroid can play spectrum sounds and music, but this feature disabled by default, as it can lead to perfomance downgrade, to enable sound switch 'Menu' > 'Enable sounds'.
+
+If you have problems with perfomance and sound is disabled, you can try to switch skipping of the frames in 'Menu' > 'Skip frames' or disable 'Smooth scaling' under the video options category there.
+
+I you found any mistakes in this help ar any bugs in the emulator mail them to zxdroid@drodin.com, or visit zxdroid.drodin.com and leave your feedbacks there!
+
+Have a good time exploring classic 8bit games, enjoy!

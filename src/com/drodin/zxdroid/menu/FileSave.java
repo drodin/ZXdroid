@@ -106,7 +106,11 @@ public class FileSave extends ListActivity {
 		try {
 			showDirectory(NativeLib.startDir);
 		} catch (NullPointerException e) {
-			showDirectory("/");
+			try {
+				showDirectory(NativeLib.sdcardDir);
+			} catch (NullPointerException e2) {
+				showDirectory("/");
+			}
 		}
 	}
 
@@ -128,6 +132,8 @@ public class FileSave extends ListActivity {
 	}
 
 	private void showDirectory(final String path) {
+		NativeLib.startDir = path;
+
 		this.currentFiles.clear();
 		this.currentDir = new File(path);
 

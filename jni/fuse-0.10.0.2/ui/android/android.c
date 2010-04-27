@@ -41,10 +41,13 @@ static const char *classPathName = LIB_CLASS;
 
 int fuse_init_done = 0;
 
-JNIEnv* cenv = NULL;
+int needRedraw = 0;
 
-int global_event_type;
-int global_event_value;
+int global_event_type = 0;
+int global_event_value = 0;
+
+JNIEnv* cenv = NULL;
+jclass nclass;
 
 int mWidth = 0;
 int mHeight = 0;
@@ -63,33 +66,28 @@ resize(JNIEnv *env, jobject thiz, jint width, jint height, jboolean scaling) {
     mHeight = height;
     mScaling = scaling;
 
-    jclass cls = (*cenv)->FindClass(cenv, classPathName);
-    jfieldID sfid = (*cenv)->GetStaticFieldID(cenv, cls, "soundEnabled", "Z");
-    settings_current.sound = (*cenv)->GetStaticBooleanField(cenv, cls, sfid);
+    nclass = (*cenv)->FindClass(cenv, classPathName);
+
+    jfieldID sfid = (*cenv)->GetStaticFieldID(cenv, nclass, "soundEnabled", "Z");
+    settings_current.sound = (*cenv)->GetStaticBooleanField(cenv, nclass, sfid);
+
+    jfieldID rfid = (*cenv)->GetStaticFieldID(cenv, nclass, "frameSkip", "Z");
+    settings_current.frame_rate = (*cenv)->GetStaticBooleanField(cenv, nclass, rfid) + 1;
 
     jboolean isCopy;
-    jfieldID mfid = (*cenv)->GetStaticFieldID(cenv, cls, "currentMachine", "Ljava/lang/String;");
-    jstring machineId = (*cenv)->GetStaticObjectField(cenv, cls, mfid);
+    jfieldID mfid = (*cenv)->GetStaticFieldID(cenv, nclass, "currentMachine", "Ljava/lang/String;");
+    jstring machineId = (*cenv)->GetStaticObjectField(cenv, nclass, mfid);
     char *current_machine = (char*) (*cenv)->GetStringUTFChars(cenv, machineId, &isCopy);
 
     if (!fuse_init_done) {
     
-        char * argv[8] = { "fuse", "--kempston", "--sound-freq", "11025", "--machine", current_machine };
+        char * argv[16] = { "fuse", "--kempston", "--sound-freq", "11025", "--machine", current_machine };
         int argc = 6;
 
         if (!settings_current.sound) {
 	        argv[argc] = "--no-sound";
             argc++;
         }
-
-        /*
-        FILE *fp = fopen(CURRENT_SNAPSHOT, "r");
-        if( fp ) {
-            argv[argc] = CURRENT_SNAPSHOT;
-            argc++;
-            fclose(fp);
-        }
-        */
 
         fuse_init_done = !fuse_init(argc,argv);
 
@@ -110,6 +108,7 @@ resize(JNIEnv *env, jobject thiz, jint width, jint height, jboolean scaling) {
 
 void
 render(JNIEnv *env, jobject thiz, jint event) {
+
     if (event) {
         global_event_type = ((int)event/1000)*1000;
         global_event_value = event%1000;
@@ -126,23 +125,17 @@ render(JNIEnv *env, jobject thiz, jint event) {
 void
 quit(JNIEnv *env, jobject thiz) {
     cenv = env;
-    //snapshot_write(CURRENT_SNAPSHOT);
+    fuse_emulation_pause();    
+    snapshot_write(LAST_SNAPSHOT);
     fuse_end();
     fuse_init_done = 0;
     exit(0);
 }
 
-jstring
-cmachine(JNIEnv *env, jobject thiz) {
-    return (*env)->NewStringUTF(env, machine_current->id);
-}
-
-
 static JNINativeMethod methods[] = {
     {"resize", "(IIZ)V", (void*)resize },
     {"render", "(I)V", (void*)render },
     {"quit", "()V", (void*)quit },
-    {"cmachine", "()Ljava/lang/String;", (void*)cmachine },
 };
 
 static int registerNativeMethods(JNIEnv* env, const char* className, JNINativeMethod* gMethods, int numMethods)

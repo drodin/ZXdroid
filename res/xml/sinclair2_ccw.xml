@@ -23,7 +23,8 @@
 	</Row>
 
 	<Row>
-		<Key android:codes="62" android:keyIcon="@drawable/zxkb_space" />
+		<Key android:codes="1007" android:keyIcon="@drawable/zxkb_fire_lock"
+			android:isSticky="true" />
 		<Key android:codes="7" android:keyIcon="@drawable/zxkb_fire"
 			android:horizontalGap="50dip" />
 	</Row>

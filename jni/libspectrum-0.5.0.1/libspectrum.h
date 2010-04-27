@@ -798,6 +798,11 @@ libspectrum_byte WIN32_DLL * libspectrum_snap_divide_eprom( libspectrum_snap *sn
 void WIN32_DLL libspectrum_snap_set_divide_eprom( libspectrum_snap *snap, int idx, libspectrum_byte* divide_eprom );
 libspectrum_byte WIN32_DLL * libspectrum_snap_divide_ram( libspectrum_snap *snap, int idx );
 void WIN32_DLL libspectrum_snap_set_divide_ram( libspectrum_snap *snap, int idx, libspectrum_byte* divide_ram );
+int WIN32_DLL libspectrum_snap_fuller_box_active( libspectrum_snap *snap );
+void WIN32_DLL libspectrum_snap_set_fuller_box_active( libspectrum_snap *snap, int fuller_box_active );
+int WIN32_DLL libspectrum_snap_melodik_active( libspectrum_snap *snap );
+void WIN32_DLL libspectrum_snap_set_melodik_active( libspectrum_snap *snap, int
+                                                    melodik_active );
 
 /*
  * Tape handling routines

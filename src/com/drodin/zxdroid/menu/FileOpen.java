@@ -20,15 +20,21 @@
 
    E-mail: rodin.dmitry@gmail.com
 
-*/
+ */
 
 package com.drodin.zxdroid.menu;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import android.app.ListActivity;
 import android.content.Context;
@@ -47,10 +53,12 @@ import com.drodin.zxdroid.R;
 
 public class FileOpen extends ListActivity {
 
+	private String startDir;
+
 	private final static String PARENT_DIR = "..";
 
 	private TextView pathView;
-		
+
 	protected final List<String> currentFiles = new ArrayList<String>();
 
 	private File currentDir = null;
@@ -63,14 +71,24 @@ public class FileOpen extends ListActivity {
 
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND,
 				WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
-			
+
 		pathView = (TextView) findViewById(R.id.file_tv);
 
+		startDir = getIntent().getStringExtra("startDir");
+
 		try {
-			showDirectory(NativeLib.startDir);
+			if(startDir != null)
+				showDirectory(startDir);
+			else
+				showDirectory(NativeLib.startDir);
 		} catch (NullPointerException e) {
-			showDirectory("/");
+			try {
+				showDirectory(NativeLib.sdcardDir);
+			} catch (NullPointerException e2) {
+				showDirectory("/");
+			}
 		}
+
 	}
 
 	@Override
@@ -83,9 +101,15 @@ public class FileOpen extends ListActivity {
 			if (file.isDirectory()) {
 				showDirectory(file.getAbsolutePath());
 			} else {
+				String name = this.currentFiles.get(position);
+				String extension = name.indexOf('.') > 0 ? name.substring(name.lastIndexOf('.') + 1) : "";
+
+				if (extension.toLowerCase().equals("zip"))
+					name = handleZip(name);
+
 				final Intent extras = new Intent();
 				extras.putExtra("menuEventValue", NativeLib.MENU_FILE_OPEN);
-				extras.putExtra("openFileName", this.currentFiles.get(position));
+				extras.putExtra("openFileName", name);
 				setResult(RESULT_OK, extras);
 				finish();
 			}
@@ -93,12 +117,15 @@ public class FileOpen extends ListActivity {
 	}
 
 	private void showDirectory(final String path) {
+		if (startDir == null)
+			NativeLib.startDir = path;
+
 		this.currentFiles.clear();
 		this.currentDir = new File(path);
-		
+
 		pathView.setText(currentDir.getAbsolutePath()+"/");
-		
-		if (this.currentDir.getParentFile() != null ) {
+
+		if (this.currentDir.getParentFile() != null && !path.equals(startDir)) {
 			this.currentFiles.add(PARENT_DIR);
 		}
 
@@ -114,10 +141,16 @@ public class FileOpen extends ListActivity {
 			} else {
 				final String extension = name.indexOf('.') > 0 ? name.substring(name.lastIndexOf('.') + 1) : "";
 
-
-				if (NativeLib.supportExt.contains(extension.toLowerCase())) {
+				if (
+						startDir == null && 
+						NativeLib.supportExt.contains(extension.toLowerCase()) && 
+						!(name.contains(NativeLib.tmpFilePrefix))
+				) {
+					sortedFiles.add(name);
+				} else if (startDir != null && extension.toLowerCase().equals("sna")) {
 					sortedFiles.add(name);
 				}
+				
 			}
 		}
 		this.currentFiles.addAll(sortedDirs);
@@ -135,6 +168,44 @@ public class FileOpen extends ListActivity {
 		setListAdapter(filenamesAdapter);
 	}
 
+	private String handleZip(String name) {
+		if (NativeLib.tmpUncompressedFN!=null) {
+			File oldFile = new File(NativeLib.tmpUncompressedFN);
+			oldFile.delete();
+		}
+		try {
+			boolean handled = false;
+			ZipFile zf = new ZipFile(name);
+			Enumeration<? extends ZipEntry> zes = zf.entries();
+			while(zes.hasMoreElements() && !handled) {
+				ZipEntry ze = zes.nextElement();
+				String zename = ze.getName();
+				String zeext = zename.indexOf('.') > 0 ? zename.substring(zename.lastIndexOf('.') + 1) : "";
+				if (NativeLib.supportExt.contains(zeext.toLowerCase())) {
+					InputStream is = zf.getInputStream(ze);
+					int offset = 0;
+					long filesize = ze.getSize();
+					byte[] tempdata = new byte[(int)filesize];
+					while (offset<filesize)
+						offset += is.read(tempdata, offset, (int)filesize-offset);
+					is.close();
+					name = NativeLib.tmpUncompressedFN =
+						NativeLib.sdcardDir + "/" + NativeLib.tmpFilePrefix + zename;
+					File outfile = new File(NativeLib.tmpUncompressedFN);
+					outfile.delete();
+					outfile.createNewFile();
+					FileOutputStream fo = new FileOutputStream(outfile);
+					fo.write(tempdata);
+					fo.close();
+					handled = true;
+				}
+			}
+			zf.close();
+		} catch (IOException e) { }
+		System.gc();
+		return name;
+	}
+
 	class ModifiedTextLayout extends LinearLayout {
 
 		public ModifiedTextLayout(final Context context, final String path, final int position) {
@@ -146,14 +217,14 @@ public class FileOpen extends ListActivity {
 
 			final TextView textView = new TextView(context);
 			textView.setTextAppearance(context, R.style.ListText);
-			
+
 
 			if (file.isDirectory()) {
 				textView.setText("/" + file.getName());
 			} else {
 				textView.setText(file.getName());
 			}
-			
+
 			addView(textView, new LinearLayout.LayoutParams(
 					LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
 		}

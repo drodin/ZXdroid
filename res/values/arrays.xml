@@ -45,4 +45,12 @@
 		<item>se</item>
 	</string-array>
 
+	<string-array name="welcome_menu">
+		<item>Load last state</item>
+		<item>Load game file</item>
+		<item>* Demo games</item>
+		<item>Continue booting</item>
+		<item>Help</item>
+	</string-array>
+
 </resources>

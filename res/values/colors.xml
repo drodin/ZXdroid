@@ -10,5 +10,6 @@
 	<drawable name="black">#ff000000</drawable>
 	<drawable name="translucent">#c0000000</drawable>
 	<drawable name="transparent">#00000000</drawable>
+	<drawable name="dimmed">#40000000</drawable>
 
 </resources>

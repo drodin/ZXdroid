@@ -41,6 +41,11 @@
 #include "androidui.h"
 #include "menu.h"
 
+void ui_set_current_machine() {
+    jmethodID mid = (*cenv)->GetStaticMethodID(cenv, nclass, "setCurrentMachine", "(Ljava/lang/String;)V");
+    (*cenv)->CallStaticVoidMethod(cenv, nclass, mid, (*cenv)->NewStringUTF(cenv, machine_current->id));
+}
+
 int 
 ui_init( int *argc, char ***argv )
 {
@@ -63,8 +68,12 @@ ui_event( void ) {
       break;
     case MENU_EVENT:
       switch (global_event_value) {
+        case 0:
+          needRedraw = 1;
+          break;
         case MENU_FILE_OPEN:
           menu_file_open(0);
+          ui_set_current_machine();
           break;
         case MENU_FILE_SAVESNAPSHOT:
           menu_file_savesnapshot(0);
@@ -89,27 +98,21 @@ ui_event( void ) {
 }
 
 char * ui_get_open_filename( const char *title ) {
-    static const char *classPathName = LIB_CLASS;
-
     jboolean isCopy;
     jstring openFileName;
 
-    jclass cls = (*cenv)->FindClass(cenv, classPathName);
-    jfieldID fid = (*cenv)->GetStaticFieldID(cenv, cls, "openFileName", "Ljava/lang/String;");
-    openFileName = (*cenv)->GetStaticObjectField(cenv, cls, fid);
+    jfieldID fid = (*cenv)->GetStaticFieldID(cenv, nclass, "openFileName", "Ljava/lang/String;");
+    openFileName = (*cenv)->GetStaticObjectField(cenv, nclass, fid);
     
     return (char*) (*cenv)->GetStringUTFChars(cenv, openFileName, &isCopy);
 }
 
 char * ui_get_save_filename( const char *title ) {
-    static const char *classPathName = LIB_CLASS;
-
     jboolean isCopy;
     jstring saveFileName;
 
-    jclass cls = (*cenv)->FindClass(cenv, classPathName);
-    jfieldID fid = (*cenv)->GetStaticFieldID(cenv, cls, "saveFileName", "Ljava/lang/String;");
-    saveFileName = (*cenv)->GetStaticObjectField(cenv, cls, fid);
+    jfieldID fid = (*cenv)->GetStaticFieldID(cenv, nclass, "saveFileName", "Ljava/lang/String;");
+    saveFileName = (*cenv)->GetStaticObjectField(cenv, nclass, fid);
     
     return (char*) (*cenv)->GetStringUTFChars(cenv, saveFileName, &isCopy);
 }
@@ -130,7 +133,7 @@ ui_end( void )
 }
 
 int ui_statusbar_update_speed( float speed ) { 
-    LOGI("%f", speed);
+    //LOGI("%f", speed);
     return 0;
 }
 

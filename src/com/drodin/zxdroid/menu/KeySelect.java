@@ -89,10 +89,19 @@ public class KeySelect extends Activity {
 
 			@Override
 			public boolean onKeyPreIme (int keyCode, KeyEvent event) {
-				if (keyCode>0 && keyCode<NativeLib.androidKeys.length)
-					setResult(RESULT_OK, new Intent().putExtra("androidKeyCode", keyCode));
-				finish();
-				return true;
+				if (event.getRepeatCount() == 0 && keyCode > 0 && keyCode < NativeLib.androidKeys.length) {
+					if (!NativeLib.interceptMenuBack && keyCode==KeyEvent.KEYCODE_MENU) {
+						return true;
+					} else if (!NativeLib.interceptMenuBack && keyCode==KeyEvent.KEYCODE_BACK) {
+						return false;
+					} else {
+						setResult(RESULT_OK, new Intent().putExtra("androidKeyCode", keyCode));
+						finish();
+						return true;
+					}
+				} else
+					return true;
+
 			}
 		};
 

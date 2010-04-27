@@ -20,7 +20,7 @@
 
    E-mail: rodin.dmitry@gmail.com
 
-*/
+ */
 
 package com.drodin.zxdroid;
 
@@ -35,9 +35,11 @@ public class NativeLib {
 	public static volatile ArrayList<Integer> eventQueue = new ArrayList<Integer>(256);
 	public static volatile String openFileName = "";
 	public static volatile String saveFileName = "";
-		
+
+	public static boolean frameSkip;
+
 	public static boolean smoothScaling;
-		
+	
 	public static boolean soundEnabled;
 
 	public static String onScreenControls;
@@ -45,28 +47,29 @@ public class NativeLib {
 
 	public static String currentMachine;
 	
-	public static native void resize(int width, int height, boolean scaling);
-	public static native void render(int event);
-	public static native void quit();
-	
-	public static native String cmachine();
+	public static void setCurrentMachine(String machine) {
+		currentMachine = machine;
+	}
 
-	public static int spectrumScreenWidth = 320;
-	public static int spectrumScreenHeight = 240;
+	public static native void resize(int width, int height, boolean scaling);
+
+	public static native void render(int event);
+	
+	public static native void quit();
+
+	public static final int spectrumScreenWidth = 320;
+	public static final int spectrumScreenHeight = 240;
 	public static int mWidth, mHeight;
 	public static int displayWidth, displayHeight, displayOrientation;
-	
-	public static final String startDir = "/sdcard";
-	public static final String supportExt = "" +
-			" dck rom" +
-			" dsk fdi sad scl trd td0 udi" +
-			" hdf" +
-			" mdf mdr" +
-			" rzx" +
-			" sna snp sp szx z80 zxs" +
-			" csw tap tzx spc sta ltp" +
-			" gz";
-	
+
+	public static final String sdcardDir = "/sdcard";
+	public static String startDir;
+
+	public static final String supportExt = "" + " dck rom"
+	+ " dsk fdi sad scl trd td0 udi" + " hdf" + " mdf mdr" + " rzx"
+	+ " sna snp sp szx z80 zxs" + " csw tap tzx spc sta ltp"
+	+ " gz zip";
+
 	public static final float menuTouchDelta = 20.0f;
 
 	public static final int KEY_PRESS = 1000;
@@ -76,7 +79,7 @@ public class NativeLib {
 	public static final int MENU_FILE_OPEN = 101;
 	public static final int MENU_FILE_SAVESNAPSHOT = 102;
 	public static final int MENU_FILE_EXIT = 123;
-	
+
 	public static final String[] androidKeys = {
 		"UNKNOWN", "SOFT_LEFT", "SOFT_RIGHT", "HOME", "BACK", "CALL", "ENDCALL",
 		"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
@@ -108,11 +111,18 @@ public class NativeLib {
 		null, null, null, null, null, null, null, null, null,
 		"KEMPSTON UP", "KEMPSTON DOWN", "KEMPSTON LEFT", "KEMPSTON RIGHT", "KEMPSTON FIRE" 
 	};
-	
-	public static int spectrumKeyCap = 59;
-	public static int spectrumKeySym = 58;
-	
-	public static int[] definiedKeys = new int[androidKeys.length];
-	public static String defaultDefinedKeys = "19:101;20:102;21:103;22:104;23:105;"; //DPAD as Kempston
 
+	public static final int spectrumKeyCap = 59;
+	public static final int spectrumKeySym = 58;
+	public static final int spectrumModFireLock = 1000;
+
+	public static boolean interceptMenuBack;
+	public static int[] definiedKeys = new int[androidKeys.length];
+	// DPAD as Kempston
+	public static String defaultDefinedKeys = "19:101;20:102;21:103;22:104;23:105;";
+
+	public static final String tmpFilePrefix = "zxdroid_tmp_";
+	public static String tmpUncompressedFN = null;
+
+	//public static boolean hideControls = true;
 }

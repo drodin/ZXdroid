@@ -4,13 +4,15 @@
 
 	<string name="welcome_title">Welcome to ZXdroid!</string>
 	<string name="welcome_message">
-		A ZX Spectrum emulator for Android platform
-		based on Fuse (the Free Unix Spectrum Emulator).
+		A ZX Spectrum emulator for Android platform based
+		on
+		Fuse (the Free Unix Spectrum Emulator).
 		\n\nCoded by Dmitry Rodin.
-		\n\nTAP SPECTRUM SCREEN FOR MENU!
-		(Read it carefully)
+		\n\nYou can get Spectrum games on
+		\nwww.worldofspectrum.com
 		\n\nDpad/trackball is definied as Kempston
-		joystick by default - you can change it in
+		joystick by default - you
+		can change it in
 		Menu > Define keys.</string>
 
 	<string name="emulator_state">Emulator state</string>
@@ -20,6 +22,7 @@
 	<string name="exit">Exit</string>
 
 	<string name="video_settings">Video settings</string>
+	<string name="frame_skip">Skip frames</string>
 	<string name="smooth_scaling">Smooth scaling</string>
 
 	<string name="audio_settings">Audio settings</string>
@@ -28,7 +31,11 @@
 	<string name="control_settings">Control settings</string>
 	<string name="onscreen_controls">OnScreen controls</string>
 	<string name="define_keys">Define Keys</string>
+	<string name="intercept_menu_back">Intercept Menu &amp; Back</string>
+	<string name="intercept_warning">Touch spectrum screen for menu!</string>
 	<string name="trackball_sensitivity">Trackball sensitivity</string>
+	
+	<string name="help">Help</string>
 
 	<string name="save_btn">Save</string>
 	<string name="default_save_fn">current</string>

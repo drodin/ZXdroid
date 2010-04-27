@@ -1,7 +1,7 @@
 /* snapshot.c: Snapshot handling routines
-   Copyright (c) 2001-2008 Philip Kendall, Darren Salt
+   Copyright (c) 2001-2009 Philip Kendall, Darren Salt
 
-   $Id: snapshot.c 3701 2008-06-30 20:32:56Z pak21 $
+   $Id: snapshot.c 4032 2009-06-10 11:09:44Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -181,6 +181,10 @@ libspectrum_snap_alloc( void )
   for( i = 0; i < SNAPSHOT_DIVIDE_PAGES; i++ ) {
     libspectrum_snap_set_divide_ram( snap, i, NULL );
   }
+
+  libspectrum_snap_set_fuller_box_active( snap, 0 );
+
+  libspectrum_snap_set_melodik_active( snap, 0 );
 
   return snap;
 }

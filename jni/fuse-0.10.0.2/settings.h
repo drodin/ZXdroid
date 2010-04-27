@@ -56,6 +56,7 @@ typedef struct settings_info {
    int fastload;
    int frame_rate;
    int full_screen;
+   int fuller;
   char *if2_file;
    int interface1;
    int interface2;
@@ -104,6 +105,7 @@ typedef struct settings_info {
   char *mdr_file8;
    int mdr_len;
    int mdr_random_len;
+   int melodik;
    int pal_tv2x;
   char *playback_file;
   char *plus3disk_file;
@@ -174,6 +176,7 @@ typedef struct settings_info {
    int sound_freq;
    int sound_hifi;
    int sound_load;
+   int speaker_type;
   char *start_machine;
   char *start_scaler_mode;
    int statusbar;
@@ -184,6 +187,8 @@ typedef struct settings_info {
   char *tape_file;
    int tape_traps;
    int unittests;
+   int volume_ay;
+   int volume_beeper;
    int writable_roms;
    int zxatasp_active;
   char *zxatasp_master_file;

@@ -32,7 +32,6 @@ typedef struct ANDROID_Color {
 	int8_t unused;
 } ANDROID_Color;
 
-extern int needRedraw;
 extern int uidisplay_init( int width, int height );
 
 #endif			/* #ifndef FUSE_ANDROIDDISPLAY_H */

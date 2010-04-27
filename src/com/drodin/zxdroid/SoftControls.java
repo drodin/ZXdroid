@@ -20,7 +20,7 @@
 
    E-mail: rodin.dmitry@gmail.com
 
-*/
+ */
 
 package com.drodin.zxdroid;
 
@@ -47,8 +47,9 @@ public class SoftControls extends KeyboardView implements KeyboardView.OnKeyboar
 	private int lastKeyCode1 = 0;
 	private int lastKeyCode2 = 0;
 
-	private boolean capPressed = false;
-	private boolean symPressed = false;
+	public boolean capPressed = false;
+	public boolean symPressed = false;
+	public int fireLock = 0;
 
 	public SoftControls(Context context, AttributeSet attr) {
 		super(context, attr);
@@ -175,29 +176,38 @@ public class SoftControls extends KeyboardView implements KeyboardView.OnKeyboar
 	@Override
 	public void onPress(final int primaryCode) {
 		if (primaryCode!=Keyboard.KEYCODE_SHIFT && primaryCode!=Keyboard.KEYCODE_ALT) {
-			if (primaryCode > 200) {
+			if (primaryCode > NativeLib.spectrumModFireLock + NativeLib.spectrumKeys.length) {
 				lastKeyCode1 = (int)(primaryCode/1000);
 				lastKeyCode2 = primaryCode - lastKeyCode1*1000;
 				NativeLib.eventQueue.add(NativeLib.KEY_PRESS + lastKeyCode1);
 				NativeLib.eventQueue.add(NativeLib.KEY_PRESS + lastKeyCode2);
+			} else if (primaryCode >= NativeLib.spectrumModFireLock && fireLock==0) {
+				fireLock = primaryCode-NativeLib.spectrumModFireLock;
+				NativeLib.eventQueue.add(NativeLib.KEY_PRESS + fireLock);
+			} else if (primaryCode >= NativeLib.spectrumModFireLock && fireLock!=0) {
+				NativeLib.eventQueue.add(NativeLib.KEY_RELEASE + fireLock);
+				fireLock = 0; 
 			} else {
-				lastKeyCode1 = primaryCode;
+				lastKeyCode1 = (primaryCode==fireLock)?0:primaryCode;
 				lastKeyCode2 = 0;
-				NativeLib.eventQueue.add(NativeLib.KEY_PRESS + lastKeyCode1);
+				if (lastKeyCode1!=0)
+					NativeLib.eventQueue.add(NativeLib.KEY_PRESS + lastKeyCode1);
 			}
-		}
+		} 
 	}
 
 
 	@Override
 	public void onRelease(final int primaryCode) {
 		if (primaryCode!=Keyboard.KEYCODE_SHIFT && primaryCode!=Keyboard.KEYCODE_ALT) {
-			if (lastKeyCode1!=0)
+			if (lastKeyCode1!=0) {
 				NativeLib.eventQueue.add(NativeLib.KEY_RELEASE + lastKeyCode1);
-			if (lastKeyCode2!=0)
+				lastKeyCode1 = 0;
+			}
+			if (lastKeyCode2!=0) {
 				NativeLib.eventQueue.add(NativeLib.KEY_RELEASE + lastKeyCode2);
-			lastKeyCode1 = 0;
-			lastKeyCode2 = 0;
+				lastKeyCode2 = 0;
+			}
 		}
 	}
 

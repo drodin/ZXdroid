@@ -1,7 +1,7 @@
 /* sna.c: Routines for handling .sna snapshots
    Copyright (c) 2001-2002 Philip Kendall
 
-   $Id: sna.c 3784 2008-10-22 12:36:07Z fredm $
+   $Id: sna.c 4034 2009-06-11 12:58:26Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -316,6 +316,11 @@ libspectrum_sna_write( libspectrum_byte **buffer, size_t *length,
 
   /* We don't save custom ROMs at all */
   if( libspectrum_snap_custom_rom( snap ) )
+    *out_flags |= LIBSPECTRUM_FLAG_SNAPSHOT_MAJOR_INFO_LOSS;
+
+  /* We don't save AY interfaces  at all */
+  if( libspectrum_snap_fuller_box_active( snap ) ||
+      libspectrum_snap_melodik_active( snap ) )
     *out_flags |= LIBSPECTRUM_FLAG_SNAPSHOT_MAJOR_INFO_LOSS;
 
   ptr = *buffer;

@@ -2,7 +2,7 @@
    Copyright (c) 2001-2004 Russell Marks, Philip Kendall
    Copyright (c) 2003 Darren Salt
 
-   $Id: joystick.h 2993 2007-06-17 13:54:49Z pak21 $
+   $Id: joystick.h 4030 2009-06-07 14:38:38Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,12 +49,15 @@ typedef enum joystick_type_t {
   JOYSTICK_TYPE_SINCLAIR_2,
   JOYSTICK_TYPE_TIMEX_1,
   JOYSTICK_TYPE_TIMEX_2,
+  JOYSTICK_TYPE_FULLER,
 
 } joystick_type_t;
 
-#define JOYSTICK_TYPE_COUNT 7
+#define JOYSTICK_TYPE_COUNT 8
 
 extern const char *joystick_name[];
+extern const char *joystick_connection[];
+#define JOYSTICK_CONN_COUNT 4
 
 typedef enum joystick_button {
 
@@ -75,5 +78,7 @@ libspectrum_byte joystick_kempston_read ( libspectrum_word port,
 					  int *attached );
 libspectrum_byte joystick_timex_read ( libspectrum_word port,
 				       libspectrum_byte which );
+libspectrum_byte joystick_fuller_read ( libspectrum_word port,
+					int *attached );
 
 #endif			/* #ifndef FUSE_JOYSTICK_H */

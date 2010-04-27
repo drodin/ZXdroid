@@ -1,8 +1,8 @@
 /* sound.c: Sound support
-   Copyright (c) 2000-2007 Russell Marks, Matan Ziv-Av, Philip Kendall,
+   Copyright (c) 2000-2009 Russell Marks, Matan Ziv-Av, Philip Kendall,
                            Fredrick Meunier
 
-   $Id: sound.c 3186 2007-10-03 19:07:13Z zubzero $
+   $Id: sound.c 4112 2010-01-08 11:03:43Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,26 +28,13 @@
  * MAME's licence explicitly permits free use of info (even encourages it).
  */
 
-/* NB: I know some of this stuff looks fairly CPU-hogging.
- * For example, the AY code tracks changes with sub-frame timing
- * in a rather hairy way, and there's subsampling here and there.
- * But if you measure the CPU use, it doesn't actually seem
- * very high at all. And I speak as a Cyrix owner. :-)
- */
-
-#include <config.h>
-
-#include <libspectrum.h>
-#ifdef HAVE_SAMPLERATE
-#include <samplerate.h>
-#endif /* #ifdef HAVE_SAMPLERATE */
-
 #include "fuse.h"
 #include "machine.h"
 #include "settings.h"
 #include "sound.h"
 #include "tape.h"
 #include "ui/ui.h"
+#include "sound/blipbuffer.h"
 
 /* Do we have any of our sound devices available? */
 
@@ -56,19 +43,14 @@ int sound_enabled = 0;		/* Are we currently using the sound card */
 int sound_enabled_ever = 0;	/* if it's *ever* been in use; see
 				   sound_ay_write() and sound_ay_reset() */
 int sound_stereo = 0;		/* true for stereo *output sample* (only) */
-int sound_stereo_ay_abc = 0;	/* (AY stereo) true for ABC stereo, else ACB */
-int sound_stereo_ay_narrow = 0;	/* (AY stereo) true for narrow AY st. sep. */
-
 int sound_stereo_ay = 0;	/* local copy of settings_current.stereo_ay */
-int sound_stereo_beeper = 0;	/* and settings_current.stereo_beeper */
-
 
 /* assume all three tone channels together match the beeper volume (ish).
  * Must be <=127 for all channels; 50+2+(24*3) = 124.
  * (Now scaled up for 16-bit.)
  */
 #define AMPL_BEEPER		( 50 * 256)
-#define AMPL_TAPE		( 2 * 256 )
+#define AMPL_TAPE		( 5 * 256 )
 #define AMPL_AY_TONE		( 24 * 256 )	/* three of these */
 
 /* max. number of sub-frame AY port writes allowed;
@@ -77,39 +59,17 @@ int sound_stereo_beeper = 0;	/* and settings_current.stereo_beeper */
  */
 #define AY_CHANGE_MAX		8000
 
-/* frequency to generate sound at for hifi sound */
-#define HIFI_FREQ              88200
-
-#ifdef HAVE_SAMPLERATE
-static SRC_STATE *src_state;
-#endif /* #ifdef HAVE_SAMPLERATE */
-
-int sound_generator_framesiz;
+int sound_freq;
 int sound_framesiz;
-
-static int sound_generator_freq;
 
 static int sound_channels;
 
 static unsigned int ay_tone_levels[16];
 
-static libspectrum_signed_word *sound_buf, *tape_buf;
-static float *convert_input_buffer, *convert_output_buffer;
-
-/* beeper stuff */
-static int sound_oldpos[2], sound_fillpos[2];
-static int sound_oldval[2], sound_oldval_orig[2];
-
-/* foo_subcycles are fixed-point with low 16 bits as fractional part.
- * The other bits count as the chip does.
- */
 static unsigned int ay_tone_tick[3], ay_tone_high[3], ay_noise_tick;
-static unsigned int ay_tone_subcycles, ay_env_subcycles;
+static unsigned int ay_tone_cycles, ay_env_cycles;
 static unsigned int ay_env_internal_tick, ay_env_tick;
-static unsigned int ay_tick_incr;
 static unsigned int ay_tone_period[3], ay_noise_period, ay_env_period;
-
-static int beeper_last_subpos[2] = { 0, 0 };
 
 /* Local copy of the AY registers */
 static libspectrum_byte sound_ay_registers[16];
@@ -117,31 +77,80 @@ static libspectrum_byte sound_ay_registers[16];
 struct ay_change_tag
 {
   libspectrum_dword tstates;
-  unsigned short ofs;
   unsigned char reg, val;
 };
 
 static struct ay_change_tag ay_change[ AY_CHANGE_MAX ];
 static int ay_change_count;
 
+Blip_Buffer *left_buf = NULL;
+Blip_Buffer *right_buf = NULL;
+blip_sample_t *samples = NULL;
 
-#define STEREO_BUF_SIZE 4096
+Blip_Synth *left_beeper_synth = NULL, *right_beeper_synth = NULL;
 
-static int pstereobuf[ STEREO_BUF_SIZE ];
-static int pstereobufsiz, pstereopos;
-static int psgap = 250;
-static int rstereobuf_l[ STEREO_BUF_SIZE ], rstereobuf_r[ STEREO_BUF_SIZE ];
-static int rstereopos, rchan1pos, rchan2pos, rchan3pos;
+Blip_Synth *ay_a_synth = NULL, *ay_b_synth = NULL, *ay_c_synth = NULL;
+Blip_Synth *ay_a_synth_r = NULL, *ay_b_synth_r = NULL, *ay_c_synth_r = NULL;
 
+struct speaker_type_tag
+{
+  int bass;
+  double treble;
+};
+
+static struct speaker_type_tag speaker_type[] =
+  { { 200, -47.0 }, { 1000, -67.0 } };
+
+static double
+sound_get_volume( int volume )
+{
+  if( volume < 0 ) volume = 0;
+  else if( volume > 100 ) volume = 100;
+
+  return volume / 100.0;
+}
+
+/* Returns the emulation speed adjusted processor speed */
+libspectrum_dword
+sound_get_effective_processor_speed( void )
+{
+  return machine_current->timings.processor_speed / 100 * 
+           settings_current.emulation_speed;
+}
+
+int
+sound_init_blip( Blip_Buffer **buf, Blip_Synth **synth )
+{
+  *buf = new_Blip_Buffer();
+  blip_buffer_set_clock_rate( *buf, sound_get_effective_processor_speed() );
+  /* Allow up to 1s of playback buffer - this allows us to cope with slowing
+     down to 2% of speed where a single Speccy frame generates just under 1s
+     of sound */
+  if ( blip_buffer_set_sample_rate( *buf, settings_current.sound_freq, 1000 ) ) {
+    sound_end();
+    ui_error( UI_ERROR_ERROR, "out of memory at %s:%d", __FILE__, __LINE__ );
+    return 0;
+  }
+
+  *synth = new_Blip_Synth();
+
+  blip_synth_set_volume( *synth, sound_get_volume( settings_current.volume_beeper ) );
+  blip_synth_set_output( *synth, *buf );
+
+  blip_buffer_set_bass_freq( *buf, speaker_type[ settings_current.speaker_type ].bass );
+  blip_synth_set_treble_eq( *synth, speaker_type[ settings_current.speaker_type ].treble );
+
+  return 1;
+}
 
 static void
 sound_ay_init( void )
 {
-/* AY output doesn't match the claimed levels; these levels are based
- * on the measurements posted to comp.sys.sinclair in Dec 2001 by
- * Matthew Westcott, adjusted as I described in a followup to his post,
- * then scaled to 0..0xffff.
- */
+  /* AY output doesn't match the claimed levels; these levels are based
+   * on the measurements posted to comp.sys.sinclair in Dec 2001 by
+   * Matthew Westcott, adjusted as I described in a followup to his post,
+   * then scaled to 0..0xffff.
+   */
   static const int levels[16] = {
     0x0000, 0x0385, 0x053D, 0x0770,
     0x0AD7, 0x0FD5, 0x15B0, 0x230C,
@@ -150,162 +159,116 @@ sound_ay_init( void )
   };
   int f;
 
-/* scale the values down to fit */
+  /* scale the values down to fit */
   for( f = 0; f < 16; f++ )
     ay_tone_levels[f] = ( levels[f] * AMPL_AY_TONE + 0x8000 ) / 0xffff;
 
   ay_noise_tick = ay_noise_period = 0;
   ay_env_internal_tick = ay_env_tick = ay_env_period = 0;
-  ay_tone_subcycles = ay_env_subcycles = 0;
+  ay_tone_cycles = ay_env_cycles = 0;
   for( f = 0; f < 3; f++ )
     ay_tone_tick[f] = ay_tone_high[f] = 0, ay_tone_period[f] = 1;
 
   ay_change_count = 0;
 }
 
-
 void
 sound_init( const char *device )
 {
-  static int first_init = 1;
-  int f, ret;
+  int ret;
   float hz;
-#ifdef HAVE_SAMPLERATE
-  int error;
-#endif /* #ifdef HAVE_SAMPLERATE */
 
-/* if we don't have any sound I/O code compiled in, don't do sound */
-#ifdef NO_SOUND
-  return;
-#endif
-
+  /* Allow sound as long as emulation speed is greater than 2%
+     (less than that and a single Speccy frame generates more
+     than a seconds worth of sound which is bigger than the
+     maximum Blip_Buffer of 1 second) */
   if( !( !sound_enabled && settings_current.sound &&
-	 settings_current.emulation_speed == 100 ) )
+         settings_current.emulation_speed > 1 ) )
     return;
 
   sound_stereo_ay = settings_current.stereo_ay;
-  sound_stereo_beeper = settings_current.stereo_beeper;
 
-/* only try for stereo if we need it */
-  if( sound_stereo_ay || sound_stereo_beeper )
+  /* only try for stereo if we need it */
+  if( sound_stereo_ay )
     sound_stereo = 1;
+
   ret =
-    sound_lowlevel_init( device, &settings_current.sound_freq,
-			 &sound_stereo );
+    sound_lowlevel_init( device, &settings_current.sound_freq, &sound_stereo );
 
   if( ret )
     return;
 
-/* important to override these settings if not using stereo
- * (it would probably be confusing to mess with the stereo
- * settings in settings_current though, which is why we make copies
- * rather than using the real ones).
- */
+  if( !sound_init_blip(&left_buf, &left_beeper_synth) ) return;
+  if( sound_stereo && !sound_init_blip(&right_buf, &right_beeper_synth) ) return;
+
+  ay_a_synth = new_Blip_Synth();
+  blip_synth_set_volume( ay_a_synth, sound_get_volume( settings_current.volume_ay) );
+  blip_synth_set_output( ay_a_synth, left_buf );
+  blip_synth_set_treble_eq( ay_a_synth, speaker_type[ settings_current.speaker_type ].treble );
+
+  ay_b_synth = new_Blip_Synth();
+  blip_synth_set_volume( ay_b_synth, sound_get_volume( settings_current.volume_ay) );
+  blip_synth_set_treble_eq( ay_b_synth, speaker_type[ settings_current.speaker_type ].treble );
+
+  ay_c_synth = new_Blip_Synth();
+  blip_synth_set_volume( ay_c_synth, sound_get_volume( settings_current.volume_ay) );
+  blip_synth_set_output( ay_c_synth, left_buf );
+  blip_synth_set_treble_eq( ay_c_synth, speaker_type[ settings_current.speaker_type ].treble );
+
+  /* important to override these settings if not using stereo
+   * (it would probably be confusing to mess with the stereo
+   * settings in settings_current though, which is why we make copies
+   * rather than using the real ones).
+   */
   if( !sound_stereo ) {
     sound_stereo_ay = 0;
-    sound_stereo_beeper = 0;
+  }
+
+  ay_a_synth_r = NULL;
+  ay_b_synth_r = NULL;
+  ay_c_synth_r = NULL;
+
+  if( sound_stereo ) {
+    ay_c_synth_r = new_Blip_Synth();
+    blip_synth_set_volume( ay_c_synth_r, sound_get_volume( settings_current.volume_ay ) );
+    blip_synth_set_output( ay_c_synth_r, right_buf );
+
+    if( sound_stereo_ay ) {
+      /* stereo with ACB stereo. */
+      blip_synth_set_output( ay_b_synth, right_buf );
+    } else {
+      ay_a_synth_r = new_Blip_Synth();
+      blip_synth_set_volume( ay_a_synth_r, sound_get_volume( settings_current.volume_ay ) );
+      blip_synth_set_output( ay_a_synth_r, right_buf );
+      blip_synth_set_treble_eq( ay_a_synth_r, speaker_type[ settings_current.speaker_type ].treble );
+
+      blip_synth_set_output( ay_b_synth, left_buf );
+
+      ay_b_synth_r = new_Blip_Synth();
+      blip_synth_set_volume( ay_b_synth_r, sound_get_volume( settings_current.volume_ay ) );
+      blip_synth_set_output( ay_b_synth_r, right_buf );
+      blip_synth_set_treble_eq( ay_b_synth_r, speaker_type[ settings_current.speaker_type ].treble );
+    }
+  } else {
+    blip_synth_set_output( ay_b_synth, left_buf );
   }
 
   sound_enabled = sound_enabled_ever = 1;
 
   sound_channels = ( sound_stereo ? 2 : 1 );
 
-  hz = ( float ) machine_current->timings.processor_speed /
-    machine_current->timings.tstates_per_frame;
+  /* Adjust relative processor speed to deal with adjusting sound generation
+     frequency against emulation speed (more flexible than adjusting generated
+     sample rate) */
+  hz = ( float )sound_get_effective_processor_speed() /
+                machine_current->timings.tstates_per_frame;
 
-  sound_generator_freq =
-    settings_current.sound_hifi ? HIFI_FREQ : settings_current.sound_freq;
-  sound_generator_framesiz = sound_generator_freq / hz;
+  /* Size of audio data we will get from running a single Spectrum frame */
+  sound_framesiz = ( float )settings_current.sound_freq / hz;
+  sound_framesiz++;
 
-  if( ( sound_buf = malloc( sizeof( libspectrum_signed_word ) *
-			    sound_generator_framesiz * sound_channels ) ) ==
-      NULL
-      || ( tape_buf =
-	   malloc( sizeof( libspectrum_signed_word ) *
-		   sound_generator_framesiz ) ) == NULL ) {
-    if( sound_buf ) {
-      free( sound_buf );
-      sound_buf = NULL;
-    }
-    sound_end();
-    return;
-  }
-
-  sound_framesiz = ( float ) settings_current.sound_freq / hz;
-
-#ifdef HAVE_SAMPLERATE
-  if( settings_current.sound_hifi ) {
-    if( ( convert_input_buffer = malloc( sizeof( float ) *
-					 sound_generator_framesiz *
-					 sound_channels ) ) == NULL
-	|| ( convert_output_buffer =
-	     malloc( sizeof( float ) * sound_framesiz * sound_channels ) ) ==
-	NULL ) {
-      if( convert_input_buffer ) {
-	free( convert_input_buffer );
-	convert_input_buffer = NULL;
-      }
-      sound_end();
-      return;
-    }
-  }
-
-  src_state = src_new( SRC_SINC_MEDIUM_QUALITY, sound_channels, &error );
-  if( error ) {
-    ui_error( UI_ERROR_ERROR,
-	      "error initialising sample rate converter %s",
-	      src_strerror( error ) );
-    sound_end();
-    return;
-  }
-#endif /* #ifdef HAVE_SAMPLERATE */
-
-/* if we're resuming, we need to be careful about what
- * gets reset. The minimum we can do is the beeper
- * buffer positions, so that's here.
- */
-  sound_oldpos[0] = sound_oldpos[1] = -1;
-  sound_fillpos[0] = sound_fillpos[1] = 0;
-
-/* this stuff should only happen on the initial call.
- * (We currently assume the new sample rate will be the
- * same as the previous one, hence no need to recalculate
- * things dependent on that.)
- */
-  if( first_init ) {
-    first_init = 0;
-
-    for( f = 0; f < 2; f++ )
-      sound_oldval[f] = sound_oldval_orig[f] = 0;
-  }
-
-  if( sound_stereo_beeper ) {
-    for( f = 0; f < STEREO_BUF_SIZE; f++ )
-      pstereobuf[f] = 0;
-    pstereopos = 0;
-    pstereobufsiz = ( sound_generator_freq * psgap ) / 22000;
-  }
-
-  if( sound_stereo_ay ) {
-    int pos =
-      ( sound_stereo_ay_narrow ? 3 : 6 ) * sound_generator_freq / 8000;
-
-    for( f = 0; f < STEREO_BUF_SIZE; f++ )
-      rstereobuf_l[f] = rstereobuf_r[f] = 0;
-    rstereopos = 0;
-
-    /* the actual ACB/ABC bit :-) */
-    rchan1pos = -pos;
-    if( sound_stereo_ay_abc )
-      rchan2pos = 0, rchan3pos = pos;
-    else
-      rchan2pos = pos, rchan3pos = 0;
-  }
-
-  ay_tick_incr = ( int ) ( 65536. *
-			   libspectrum_timings_ay_speed( machine_current->
-							 machine ) /
-			   sound_generator_freq );
+  samples = (blip_sample_t *)calloc( sound_framesiz * sound_channels,
+                                     sizeof(blip_sample_t) );
 }
 
 void
@@ -315,129 +278,72 @@ sound_pause( void )
     sound_end();
 }
 
-
 void
 sound_unpause( void )
 {
-/* No sound if fastloading in progress */
+  /* No sound if fastloading in progress */
   if( settings_current.fastload && tape_is_playing() )
     return;
 
   sound_init( settings_current.sound_device );
 }
 
-
 void
 sound_end( void )
 {
   if( sound_enabled ) {
-    if( sound_buf ) {
-      free( sound_buf );
-      sound_buf = NULL;
-      free( tape_buf );
-      tape_buf = NULL;
-    }
-    if( convert_input_buffer ) {
-      free( convert_input_buffer );
-      convert_input_buffer = NULL;
-    }
-    if( convert_output_buffer ) {
-      free( convert_output_buffer );
-      convert_output_buffer = NULL;
-    }
-#ifdef HAVE_SAMPLERATE
-    if( src_state )
-      src_state = src_delete( src_state );
-#endif /* #ifdef HAVE_SAMPLERATE */
+    delete_Blip_Synth( &left_beeper_synth );
+    delete_Blip_Buffer( &left_buf );
+    delete_Blip_Synth( &right_beeper_synth );
+    delete_Blip_Buffer( &right_buf );
+
+    delete_Blip_Synth( &ay_a_synth );
+    delete_Blip_Synth( &ay_b_synth );
+    delete_Blip_Synth( &ay_c_synth );
+    delete_Blip_Synth( &ay_a_synth_r );
+    delete_Blip_Synth( &ay_b_synth_r );
+    delete_Blip_Synth( &ay_c_synth_r );
+
     sound_lowlevel_end();
+    free( samples );
     sound_enabled = 0;
   }
 }
 
-
-/* write sample to buffer as pseudo-stereo */
-static void
-sound_write_buf_pstereo( libspectrum_signed_word * out, int c )
+static inline void
+ay_do_tone( int level, unsigned int tone_count, int *var, int chan )
 {
-  int bl = ( c - pstereobuf[ pstereopos ] ) / 2;
-  int br = ( c + pstereobuf[ pstereopos ] ) / 2;
+  *var = 0;
 
-  if( bl < -AMPL_BEEPER )
-    bl = -AMPL_BEEPER;
-  if( br < -AMPL_BEEPER )
-    br = -AMPL_BEEPER;
-  if( bl > AMPL_BEEPER )
-    bl = AMPL_BEEPER;
-  if( br > AMPL_BEEPER )
-    br = AMPL_BEEPER;
+  ay_tone_tick[ chan ] += tone_count;
 
-  *out = bl;
-  out[1] = br;
-
-  pstereobuf[ pstereopos ] = c;
-  pstereopos++;
-  if( pstereopos >= pstereobufsiz )
-    pstereopos = 0;
-}
-
-
-
-/* not great having this as a macro to inline it, but it's only
- * a fairly short routine, and it saves messing about.
- * (XXX ummm, possibly not so true any more :-))
- */
-#define AY_GET_SUBVAL( chan ) \
-  ( level * 2 * ay_tone_tick[ chan ] / tone_count )
-
-#define AY_DO_TONE( var, chan ) \
-  ( var ) = 0;								\
-  is_low = 0;								\
-  if( level ) {								\
-    if( ay_tone_high[ chan ] )						\
-      ( var ) = ( level );						\
-    else {								\
-      ( var ) = -( level );						\
-      is_low = 1;							\
-    }									\
-  }									\
-  									\
-  ay_tone_tick[ chan ] += tone_count;					\
-  count = 0;								\
-  while( ay_tone_tick[ chan ] >= ay_tone_period[ chan ] ) {		\
-    count++;								\
-    ay_tone_tick[ chan ] -= ay_tone_period[ chan ];			\
-    ay_tone_high[ chan ] = !ay_tone_high[ chan ];			\
-    									\
-    /* has to be here, unfortunately... */				\
-    if( count == 1 && level && ay_tone_tick[ chan ] < tone_count ) {	\
-      if( is_low )							\
-        ( var ) += AY_GET_SUBVAL( chan );				\
-      else								\
-        ( var ) -= AY_GET_SUBVAL( chan );				\
-      }									\
-    }									\
-  									\
-  /* if it's changed more than once during the sample, we can't */	\
-  /* represent it faithfully. So, just hope it's a sample.      */	\
-  /* (That said, this should also help avoid aliasing noise.)   */	\
-  if( count > 1 )							\
-    ( var ) = -( level )
-
-
-/* add val, correctly delayed on either left or right buffer,
- * to add the AY stereo positioning. This doesn't actually put
- * anything directly in sound_buf, though.
- */
-#define GEN_STEREO( pos, val ) \
-  if( ( pos ) < 0 ) {							\
-    rstereobuf_l[ rstereopos ] += ( val );				\
-    rstereobuf_r[ ( rstereopos - pos ) % STEREO_BUF_SIZE ] += ( val );	\
-  } else {								\
-    rstereobuf_l[ ( rstereopos + pos ) % STEREO_BUF_SIZE ] += ( val );	\
-    rstereobuf_r[ rstereopos ] += ( val );				\
+  if( ay_tone_tick[ chan ] >= ay_tone_period[ chan ] ) {
+    ay_tone_tick[ chan ] -= ay_tone_period[ chan ];
+    ay_tone_high[ chan ] = !ay_tone_high[ chan ];
   }
 
+  if( level ) {
+    if( ay_tone_high[ chan ] )
+      *var = level;
+    else {
+      *var = -level;
+    }
+  }
 
+  /* The AY output goes from 0 to the maximum volume, so there
+   * is a DC component that is half the maxmum volume.
+   * Robocop uses a high frequency square wave with a tone
+   * period of one to average out to being like a DC offset at
+   * around half the maximum volume. This is used as a base for
+   * the sample playback.
+   * This seems to intefere with our attempt to remove the
+   * returned DC offset, so for now we just ignore the high
+   * frequency wave and hope it's a sample
+   */
+  if( ay_tone_period[ chan ] == 1 ) {
+      *var = -level;
+  }
+}
 
 /* bitmasks for envelope */
 #define AY_ENV_CONT	8
@@ -445,7 +351,12 @@ sound_write_buf_pstereo( libspectrum_signed_word * out, int c )
 #define AY_ENV_ALT	2
 #define AY_ENV_HOLD	1
 
-#define HZ_COMMON_DENOMINATOR 50
+/* the AY steps down the external clock by 16 for tone and noise
+   generators */
+#define AY_CLOCK_DIVISOR 16
+/* all Spectrum models and clones with an AY seem to count down the
+   master clock by 2 to drive the AY */
+#define AY_CLOCK_RATIO 2
 
 static void
 sound_ay_overlay( void )
@@ -455,75 +366,58 @@ sound_ay_overlay( void )
   static int env_first = 1, env_rev = 0, env_counter = 15;
   int tone_level[3];
   int mixer, envshape;
-  int f, g, level, count;
-  libspectrum_signed_word *ptr;
+  int g, level;
+  libspectrum_dword f;
   struct ay_change_tag *change_ptr = ay_change;
   int changes_left = ay_change_count;
   int reg, r;
-  int is_low;
   int chan1, chan2, chan3;
+  int last_chan1 = 0, last_chan2 = 0, last_chan3 = 0;
   unsigned int tone_count, noise_count;
-  libspectrum_dword sfreq, cpufreq;
 
-/* If no AY chip, don't produce any AY sound (!) */
-  if( !machine_current->capabilities & LIBSPECTRUM_MACHINE_CAPABILITY_AY )
+  /* If no AY chip, don't produce any AY sound (!) */
+  if( !( periph_fuller_active || periph_melodik_active ||
+         machine_current->capabilities & LIBSPECTRUM_MACHINE_CAPABILITY_AY ) )
     return;
 
-/* convert change times to sample offsets, use common denominator of 50 to
-   avoid overflowing a dword */
-  sfreq = sound_generator_freq / HZ_COMMON_DENOMINATOR;
-  cpufreq = machine_current->timings.processor_speed / HZ_COMMON_DENOMINATOR;
-  for( f = 0; f < ay_change_count; f++ )
-    ay_change[f].ofs = ( ay_change[f].tstates * sfreq ) / cpufreq;
-
-  for( f = 0, ptr = sound_buf; f < sound_generator_framesiz; f++ ) {
-    /* update ay registers. All this sub-frame change stuff
-     * is pretty hairy, but how else would you handle the
-     * samples in Robocop? :-) It also clears up some other
-     * glitches.
-     */
-    while( changes_left && f >= change_ptr->ofs ) {
+  for( f = 0; f < machine_current->timings.tstates_per_frame;
+       f+= AY_CLOCK_DIVISOR * AY_CLOCK_RATIO ) {
+    /* update ay registers. */
+    while( changes_left && f >= change_ptr->tstates ) {
       sound_ay_registers[ reg = change_ptr->reg ] = change_ptr->val;
       change_ptr++;
       changes_left--;
 
       /* fix things as needed for some register changes */
       switch ( reg ) {
-      case 0:
-      case 1:
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-	r = reg >> 1;
-	/* a zero-len period is the same as 1 */
-	ay_tone_period[r] = ( sound_ay_registers[ reg & ~1 ] |
-			      ( sound_ay_registers[ reg | 1 ] & 15 ) << 8 );
-	if( !ay_tone_period[r] )
-	  ay_tone_period[r]++;
+      case 0: case 1: case 2: case 3: case 4: case 5:
+        r = reg >> 1;
+        /* a zero-len period is the same as 1 */
+        ay_tone_period[r] = ( sound_ay_registers[ reg & ~1 ] |
+                              ( sound_ay_registers[ reg | 1 ] & 15 ) << 8 );
+        if( !ay_tone_period[r] )
+          ay_tone_period[r]++;
 
-	/* important to get this right, otherwise e.g. Ghouls 'n' Ghosts
-	 * has really scratchy, horrible-sounding vibrato.
-	 */
-	if( ay_tone_tick[r] >= ay_tone_period[r] * 2 )
-	  ay_tone_tick[r] %= ay_tone_period[r] * 2;
-	break;
+        /* important to get this right, otherwise e.g. Ghouls 'n' Ghosts
+         * has really scratchy, horrible-sounding vibrato.
+         */
+        if( ay_tone_tick[r] >= ay_tone_period[r] * 2 )
+          ay_tone_tick[r] %= ay_tone_period[r] * 2;
+        break;
       case 6:
-	ay_noise_tick = 0;
-	ay_noise_period = ( sound_ay_registers[ reg ] & 31 );
-	break;
-      case 11:
-      case 12:
-	/* this one *isn't* fixed-point */
-	ay_env_period =
-	  sound_ay_registers[11] | ( sound_ay_registers[12] << 8 );
-	break;
+        ay_noise_tick = 0;
+        ay_noise_period = ( sound_ay_registers[ reg ] & 31 );
+        break;
+      case 11: case 12:
+        ay_env_period =
+          sound_ay_registers[11] | ( sound_ay_registers[12] << 8 );
+        break;
       case 13:
-	ay_env_internal_tick = ay_env_tick = ay_env_subcycles = 0;
-	env_first = 1;
-	env_rev = 0;
-	env_counter = ( sound_ay_registers[13] & AY_ENV_ATTACK ) ? 0 : 15;
-	break;
+        ay_env_internal_tick = ay_env_tick = ay_env_cycles = 0;
+        env_first = 1;
+        env_rev = 0;
+        env_counter = ( sound_ay_registers[13] & AY_ENV_ATTACK ) ? 0 : 15;
+        break;
       }
     }
 
@@ -537,59 +431,57 @@ sound_ay_overlay( void )
 
     for( g = 0; g < 3; g++ )
       if( sound_ay_registers[ 8 + g ] & 16 )
-	tone_level[g] = level;
+        tone_level[g] = level;
 
-    /* envelope output counter gets incr'd every 16 AY cycles.
-     * Has to be a while, as this is sub-output-sample res.
-     */
-    ay_env_subcycles += ay_tick_incr;
+    /* envelope output counter gets incr'd every 16 AY cycles. */
+    ay_env_cycles += AY_CLOCK_DIVISOR;
     noise_count = 0;
-    while( ay_env_subcycles >= ( 16 << 16 ) ) {
-      ay_env_subcycles -= ( 16 << 16 );
+    while( ay_env_cycles >= 16 ) {
+      ay_env_cycles -= 16;
       noise_count++;
       ay_env_tick++;
       while( ay_env_tick >= ay_env_period ) {
-	ay_env_tick -= ay_env_period;
+        ay_env_tick -= ay_env_period;
 
-	/* do a 1/16th-of-period incr/decr if needed */
-	if( env_first ||
-	    ( ( envshape & AY_ENV_CONT ) && !( envshape & AY_ENV_HOLD ) ) ) {
-	  if( env_rev )
-	    env_counter -= ( envshape & AY_ENV_ATTACK ) ? 1 : -1;
-	  else
-	    env_counter += ( envshape & AY_ENV_ATTACK ) ? 1 : -1;
-	  if( env_counter < 0 )
-	    env_counter = 0;
-	  if( env_counter > 15 )
-	    env_counter = 15;
-	}
+        /* do a 1/16th-of-period incr/decr if needed */
+        if( env_first ||
+            ( ( envshape & AY_ENV_CONT ) && !( envshape & AY_ENV_HOLD ) ) ) {
+          if( env_rev )
+            env_counter -= ( envshape & AY_ENV_ATTACK ) ? 1 : -1;
+          else
+            env_counter += ( envshape & AY_ENV_ATTACK ) ? 1 : -1;
+          if( env_counter < 0 )
+            env_counter = 0;
+          if( env_counter > 15 )
+            env_counter = 15;
+        }
 
-	ay_env_internal_tick++;
-	while( ay_env_internal_tick >= 16 ) {
-	  ay_env_internal_tick -= 16;
+        ay_env_internal_tick++;
+        while( ay_env_internal_tick >= 16 ) {
+          ay_env_internal_tick -= 16;
 
-	  /* end of cycle */
-	  if( !( envshape & AY_ENV_CONT ) )
-	    env_counter = 0;
-	  else {
-	    if( envshape & AY_ENV_HOLD ) {
-	      if( env_first && ( envshape & AY_ENV_ALT ) )
-		env_counter = ( env_counter ? 0 : 15 );
-	    } else {
-	      /* non-hold */
-	      if( envshape & AY_ENV_ALT )
-		env_rev = !env_rev;
-	      else
-		env_counter = ( envshape & AY_ENV_ATTACK ) ? 0 : 15;
-	    }
-	  }
+          /* end of cycle */
+          if( !( envshape & AY_ENV_CONT ) )
+            env_counter = 0;
+          else {
+            if( envshape & AY_ENV_HOLD ) {
+              if( env_first && ( envshape & AY_ENV_ALT ) )
+                env_counter = ( env_counter ? 0 : 15 );
+            } else {
+              /* non-hold */
+              if( envshape & AY_ENV_ALT )
+                env_rev = !env_rev;
+              else
+                env_counter = ( envshape & AY_ENV_ATTACK ) ? 0 : 15;
+            }
+          }
 
-	  env_first = 0;
-	}
+          env_first = 0;
+        }
 
-	/* don't keep trying if period is zero */
-	if( !ay_env_period )
-	  break;
+        /* don't keep trying if period is zero */
+        if( !ay_env_period )
+          break;
       }
     }
 
@@ -603,60 +495,45 @@ sound_ay_overlay( void )
     chan3 = tone_level[2];
     mixer = sound_ay_registers[7];
 
-    ay_tone_subcycles += ay_tick_incr;
-    tone_count = ay_tone_subcycles >> ( 3 + 16 );
-    ay_tone_subcycles &= ( 8 << 16 ) - 1;
+    ay_tone_cycles += AY_CLOCK_DIVISOR;
+    tone_count = ay_tone_cycles >> 3;
+    ay_tone_cycles &= 7;
 
     if( ( mixer & 1 ) == 0 ) {
       level = chan1;
-      AY_DO_TONE( chan1, 0 );
+      ay_do_tone( level, tone_count, &chan1, 0 );
     }
     if( ( mixer & 0x08 ) == 0 && noise_toggle )
       chan1 = 0;
 
     if( ( mixer & 2 ) == 0 ) {
       level = chan2;
-      AY_DO_TONE( chan2, 1 );
+      ay_do_tone( level, tone_count, &chan2, 1 );
     }
     if( ( mixer & 0x10 ) == 0 && noise_toggle )
       chan2 = 0;
 
     if( ( mixer & 4 ) == 0 ) {
       level = chan3;
-      AY_DO_TONE( chan3, 2 );
+      ay_do_tone( level, tone_count, &chan3, 2 );
     }
     if( ( mixer & 0x20 ) == 0 && noise_toggle )
       chan3 = 0;
 
-    /* write the sample(s) */
-    if( !sound_stereo ) {
-      /* mono */
-      ( *ptr++ ) += chan1 + chan2 + chan3;
-    } else {
-      if( !sound_stereo_ay ) {
-	/* stereo output, but mono AY sound; still,
-	 * incr separately in case of beeper pseudostereo.
-	 */
-	( *ptr++ ) += chan1 + chan2 + chan3;
-	( *ptr++ ) += chan1 + chan2 + chan3;
-      } else {
-	/* stereo with ACB/ABC AY positioning.
-	 * Here we use real stereo positions for the channels.
-	 * Just because, y'know, it's cool and stuff. No, really. :-)
-	 * This is a little tricky, as it works by delaying sounds
-	 * on the left or right channels to model the delay you get
-	 * in the real world when sounds originate at different places.
-	 */
-	GEN_STEREO( rchan1pos, chan1 );
-	GEN_STEREO( rchan2pos, chan2 );
-	GEN_STEREO( rchan3pos, chan3 );
-	( *ptr++ ) += rstereobuf_l[ rstereopos ];
-	( *ptr++ ) += rstereobuf_r[ rstereopos ];
-	rstereobuf_l[ rstereopos ] = rstereobuf_r[ rstereopos ] = 0;
-	rstereopos++;
-	if( rstereopos >= STEREO_BUF_SIZE )
-	  rstereopos = 0;
-      }
+    if( last_chan1 != chan1 ) {
+      blip_synth_update( ay_a_synth, f, chan1 );
+      if( ay_a_synth_r ) blip_synth_update( ay_a_synth_r, f, chan1 );
+      last_chan1 = chan1;
+    }
+    if( last_chan2 != chan2 ) {
+      blip_synth_update( ay_b_synth, f, chan2 );
+      if( ay_b_synth_r ) blip_synth_update( ay_b_synth_r, f, chan2 );
+      last_chan2 = chan2;
+    }
+    if( last_chan3 != chan3 ) {
+      blip_synth_update( ay_c_synth, f, chan3 );
+      if( ay_c_synth_r ) blip_synth_update( ay_c_synth_r, f, chan3 );
+      last_chan3 = chan3;
     }
 
     /* update noise RNG/filter */
@@ -665,7 +542,7 @@ sound_ay_overlay( void )
       ay_noise_tick -= ay_noise_period;
 
       if( ( rng & 1 ) ^ ( ( rng & 2 ) ? 1 : 0 ) )
-	noise_toggle = !noise_toggle;
+        noise_toggle = !noise_toggle;
 
       /* rng is 17-bit shift reg, bit 0 is output.
        * input is bit 0 xor bit 2.
@@ -675,11 +552,10 @@ sound_ay_overlay( void )
 
       /* don't keep trying if period is zero */
       if( !ay_noise_period )
-	break;
+        break;
     }
   }
 }
-
 
 /* don't make the change immediately; record it for later,
  * to be made by sound_frame() (via sound_ay_overlay()).
@@ -695,7 +571,6 @@ sound_ay_write( int reg, int val, libspectrum_dword now )
   }
 }
 
-
 /* no need to call this initially, but should be called
  * on reset otherwise.
  */
@@ -704,7 +579,7 @@ sound_ay_reset( void )
 {
   int f;
 
-/* recalculate timings based on new machines ay clock */
+  /* recalculate timings based on new machines ay clock */
   sound_ay_init();
 
   ay_change_count = 0;
@@ -712,195 +587,61 @@ sound_ay_reset( void )
     sound_ay_write( f, 0, 0 );
   for( f = 0; f < 3; f++ )
     ay_tone_high[f] = 0;
-  ay_tone_subcycles = ay_env_subcycles = 0;
+  ay_tone_cycles = ay_env_cycles = 0;
 }
-
-
-/* write stereo or mono beeper sample, and incr ptr */
-#define SOUND_WRITE_BUF_BEEPER( ptr, val ) \
-  do {							\
-    if( sound_stereo_beeper ) {				\
-      sound_write_buf_pstereo( ( ptr ), ( val ) );	\
-      ( ptr ) += 2;					\
-    } else {						\
-      *( ptr )++ = ( val );				\
-      if( sound_stereo )				\
-        *( ptr )++ = ( val );				\
-    }							\
-  } while(0)
-
-/* the tape version works by writing to a separate mono buffer,
- * which gets added after being generated.
- */
-#define SOUND_WRITE_BUF( is_tape, ptr, val ) \
-  if( is_tape )					\
-    *( ptr )++ = ( val );			\
-  else						\
-    SOUND_WRITE_BUF_BEEPER( ptr, val )
-
-#ifdef HAVE_SAMPLERATE
-static void
-sound_resample( void )
-{
-  int error;
-  SRC_DATA data;
-
-  data.data_in = convert_input_buffer;
-  data.input_frames = sound_generator_framesiz;
-  data.data_out = convert_output_buffer;
-  data.output_frames = sound_framesiz;
-  data.src_ratio =
-    ( double ) settings_current.sound_freq / sound_generator_freq;
-  data.end_of_input = 0;
-
-  src_short_to_float_array( ( const short * ) sound_buf, convert_input_buffer,
-			    sound_generator_framesiz * sound_channels );
-
-  while( data.input_frames ) {
-    error = src_process( src_state, &data );
-    if( error ) {
-      ui_error( UI_ERROR_ERROR, "hifi sound downsample error %s",
-		src_strerror( error ) );
-      sound_end();
-      return;
-    }
-
-    src_float_to_short_array( convert_output_buffer, ( short * ) sound_buf,
-			      data.output_frames_gen * sound_channels );
-
-    sound_lowlevel_frame( sound_buf,
-			  data.output_frames_gen * sound_channels );
-
-    data.data_in += data.input_frames_used * sound_channels;
-    data.input_frames -= data.input_frames_used;
-  }
-}
-#endif /* #ifdef HAVE_SAMPLERATE */
 
 void
 sound_frame( void )
 {
-  libspectrum_signed_word *ptr, *tptr;
-  int f, bchan;
-  int ampl = AMPL_BEEPER;
+  long count;
 
   if( !sound_enabled )
     return;
 
-/* fill in remaining beeper/tape sound */
-  ptr =
-    sound_buf + ( sound_stereo ? sound_fillpos[0] * 2 : sound_fillpos[0] );
-  for( bchan = 0; bchan < 2; bchan++ ) {
-    for( f = sound_fillpos[ bchan ]; f < sound_generator_framesiz; f++ )
-      SOUND_WRITE_BUF( bchan, ptr, sound_oldval[ bchan ] );
-
-    ptr = tape_buf + sound_fillpos[1];
-    ampl = AMPL_TAPE;
-  }
-
-/* overlay tape sound */
-  ptr = sound_buf;
-  tptr = tape_buf;
-  for( f = 0; f < sound_generator_framesiz; f++, tptr++ ) {
-    ( *ptr++ ) += *tptr;
-    if( sound_stereo )
-      ( *ptr++ ) += *tptr;
-  }
-
-/* overlay AY sound */
+  /* overlay AY sound */
   sound_ay_overlay();
 
-#ifdef HAVE_SAMPLERATE
-/* resample from generated frequency down to output frequency if required */
-  if( settings_current.sound_hifi )
-    sound_resample();
-  else
-#endif /* #ifdef HAVE_SAMPLERATE */
-    sound_lowlevel_frame( sound_buf,
-			  sound_generator_framesiz * sound_channels );
+  blip_buffer_end_frame( left_buf, machine_current->timings.tstates_per_frame );
 
-  sound_oldpos[0] = sound_oldpos[1] = -1;
-  sound_fillpos[0] = sound_fillpos[1] = 0;
+  if( sound_stereo ) {
+    blip_buffer_end_frame( right_buf, machine_current->timings.tstates_per_frame );
+
+    /* Read left channel into even samples, right channel into odd samples:
+       LRLRLRLRLR... */
+    count = blip_buffer_read_samples( left_buf, samples, sound_framesiz, 1 );
+    blip_buffer_read_samples( right_buf, samples + 1, count, 1 );
+    count <<= 1;
+  } else {
+    count = blip_buffer_read_samples( left_buf, samples, sound_framesiz, BLIP_BUFFER_DEF_STEREO );
+  }
+
+  sound_lowlevel_frame( samples, count );
 
   ay_change_count = 0;
 }
 
-
-/* two beepers are supported - the real beeper (call with is_tape==0)
- * and a `fake' beeper which lets you hear when a tape is being played.
- */
 void
-sound_beeper( int is_tape, int on )
+sound_beeper( int on )
 {
-  libspectrum_signed_word *ptr;
-  int newpos, subpos;
-  int val, subval;
-  int f;
-  int bchan = ( is_tape ? 1 : 0 );
-  int ampl = ( is_tape ? AMPL_TAPE : AMPL_BEEPER );
-  int vol = ampl * 2;
+  static int beeper_ampl[] = { 0, AMPL_TAPE, AMPL_BEEPER, AMPL_BEEPER+AMPL_TAPE };
+
+  int val;
+  int ampl;
 
   if( !sound_enabled )
     return;
 
-  val = ( on ? -ampl : ampl );
+  /* Timex machines have no loading noise */
+  if( tape_is_playing() &&
+      ( !settings_current.sound_load || machine_current->timex ) )
+    on = on & 0x02;
 
-  if( val == sound_oldval_orig[ bchan ] )
-    return;
+  ampl = beeper_ampl[on];
 
-/* XXX a lookup table might help here, but would need to regenerate it
- * whenever cycles_per_frame were changed (i.e. when machine type changed).
- */
-  newpos =
-    ( tstates * sound_generator_framesiz ) /
-    machine_current->timings.tstates_per_frame;
-  subpos =
-    ( ( ( libspectrum_signed_qword ) tstates ) * sound_generator_framesiz *
-      vol ) / ( machine_current->timings.tstates_per_frame ) - vol * newpos;
+  val = -beeper_ampl[3] + ampl*2;
 
-/* if we already wrote here, adjust the level.
- */
-  if( newpos == sound_oldpos[ bchan ] ) {
-    /* adjust it as if the rest of the sample period were all in
-     * the new state. (Often it will be, but if not, we'll fix
-     * it later by doing this again.)
-     */
-    if( on )
-      beeper_last_subpos[ bchan ] += vol - subpos;
-    else
-      beeper_last_subpos[ bchan ] -= vol - subpos;
-  } else
-    beeper_last_subpos[ bchan ] = ( on ? vol - subpos : subpos );
-
-  subval = ampl - beeper_last_subpos[ bchan ];
-
-  if( newpos >= 0 ) {
-    /* fill gap from previous position */
-    if( is_tape )
-      ptr = tape_buf + sound_fillpos[1];
-    else
-      ptr =
-	sound_buf +
-	( sound_stereo ? sound_fillpos[0] * 2 : sound_fillpos[0] );
-
-    for( f = sound_fillpos[ bchan ];
-	 f < newpos && f < sound_generator_framesiz;
-	 f++ )
-      SOUND_WRITE_BUF( bchan, ptr, sound_oldval[ bchan ] );
-
-    if( newpos < sound_generator_framesiz ) {
-      /* newpos may be less than sound_fillpos, so... */
-      if( is_tape )
-	ptr = tape_buf + newpos;
-      else
-	ptr = sound_buf + ( sound_stereo ? newpos * 2 : newpos );
-
-      /* write subsample value */
-      SOUND_WRITE_BUF( bchan, ptr, subval );
-    }
+  blip_synth_update( left_beeper_synth, tstates, val );
+  if( sound_stereo ) {
+    blip_synth_update( right_beeper_synth, tstates, val );
   }
-
-  sound_oldpos[ bchan ] = newpos;
-  sound_fillpos[ bchan ] = newpos + 1;
-  sound_oldval[ bchan ] = sound_oldval_orig[ bchan ] = val;
 }

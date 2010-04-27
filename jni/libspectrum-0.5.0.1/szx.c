@@ -1,7 +1,7 @@
 /* szx.c: Routines for .szx snapshots
-   Copyright (c) 1998-2008 Philip Kendall, Fredrick Meunier, Stuart Brady
+   Copyright (c) 1998-2009 Philip Kendall, Fredrick Meunier, Stuart Brady
 
-   $Id: szx.c 3698 2008-06-30 15:12:02Z pak21 $
+   $Id: szx.c 4032 2009-06-10 11:09:44Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -71,6 +71,9 @@ static const libspectrum_byte ZXSTZF_HALTED = 2;
 static const libspectrum_word ZXSTRF_COMPRESSED = 1;
 
 #define ZXSTBID_AY "AY\0\0"
+static const libspectrum_byte ZXSTAYF_FULLERBOX = 1;
+static const libspectrum_byte ZXSTAYF_128AY = 2;
+
 #define ZXSTBID_MULTIFACE "MFCE"
 #define ZXSTBID_USPEECH "USPE"
 #define ZXSTBID_SPECDRUM "DRUM"
@@ -367,6 +370,7 @@ read_ay_chunk( libspectrum_snap *snap, libspectrum_word version GCC_UNUSED,
 	       const libspectrum_byte *end GCC_UNUSED, size_t data_length )
 {
   size_t i;
+  libspectrum_byte flags;
 
   if( data_length != 18 ) {
     libspectrum_print_error( LIBSPECTRUM_ERROR_UNKNOWN,
@@ -375,7 +379,9 @@ read_ay_chunk( libspectrum_snap *snap, libspectrum_word version GCC_UNUSED,
     return LIBSPECTRUM_ERROR_UNKNOWN;
   }
 
-  (*buffer)++;			/* Skip the flags */
+  flags = **buffer; (*buffer)++;
+  libspectrum_snap_set_fuller_box_active( snap, flags & ZXSTAYF_FULLERBOX );
+  libspectrum_snap_set_melodik_active( snap, !!( flags & ZXSTAYF_128AY ) );
 
   libspectrum_snap_set_out_ay_registerport( snap, **buffer ); (*buffer)++;
 
@@ -1841,7 +1847,9 @@ libspectrum_szx_write( libspectrum_byte **buffer, size_t *length,
   error = write_ram_pages( buffer, &ptr, length, snap, compress );
   if( error ) return error;
 
-  if( capabilities & LIBSPECTRUM_MACHINE_CAPABILITY_AY ) {
+  if( libspectrum_snap_fuller_box_active( snap ) ||
+      libspectrum_snap_melodik_active( snap ) ||
+      capabilities & LIBSPECTRUM_MACHINE_CAPABILITY_AY ) {
     error = write_ay_chunk( buffer, &ptr, length, snap );
     if( error ) return error;
   }
@@ -2486,10 +2494,15 @@ write_ay_chunk( libspectrum_byte **buffer, libspectrum_byte **ptr,
 		size_t *length, libspectrum_snap *snap )
 {
   size_t i;
+  libspectrum_byte flags;
 
   write_chunk_header( buffer, ptr, length, ZXSTBID_AY, 18 );
 
-  *(*ptr)++ = '\0';			/* Flags */
+  flags = 0;
+  if( libspectrum_snap_fuller_box_active( snap ) ) flags |= ZXSTAYF_FULLERBOX;
+  if( libspectrum_snap_melodik_active( snap ) ) flags |= ZXSTAYF_128AY;
+  *(*ptr)++ = flags;
+
   *(*ptr)++ = libspectrum_snap_out_ay_registerport( snap );
 
   for( i = 0; i < 16; i++ )

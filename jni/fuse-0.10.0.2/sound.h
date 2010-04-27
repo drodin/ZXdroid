@@ -1,7 +1,7 @@
 /* sound.h: Sound support
    Copyright (c) 2000-2004 Russell Marks, Matan Ziv-Av, Philip Kendall
 
-   $Id: sound.h 2889 2007-05-26 17:45:08Z zubzero $
+   $Id: sound.h 4031 2009-06-08 00:33:53Z fredm $
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,7 +35,8 @@ void sound_end( void );
 void sound_ay_write( int reg, int val, libspectrum_dword now );
 void sound_ay_reset( void );
 void sound_frame( void );
-void sound_beeper( int is_tape, int on );
+void sound_beeper( int on );
+libspectrum_dword sound_get_effective_processor_speed( void );
 
 extern int sound_enabled;
 extern int sound_enabled_ever;

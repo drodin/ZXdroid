@@ -53,8 +53,6 @@ uint16_t *display_screen=NULL;
 int ip, cx, cy, mx, my, mw, mh;
 uint16_t *part_screen=NULL;
 
-int needRedraw;
-
 static int image_width = 320;
 static int image_height = 240;
 
@@ -166,7 +164,6 @@ static int androiddisplay_load_gfx_mode( void ) {
     /* Redraw the entire screen... */
     display_refresh_all();
 
-
     return 0;
 }
 
@@ -176,7 +173,9 @@ void uidisplay_frame_end( void ) {
     mh -= my;
 
     if (mx==-1 || my==-1 || mw==-1 || mh==-1) {
+
         //noop
+
     } else if (mx==0 && my==0 && mw==image_width && mh==image_height) {
 
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image_width, image_height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, display_screen);

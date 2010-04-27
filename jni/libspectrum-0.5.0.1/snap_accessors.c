@@ -161,6 +161,10 @@ struct libspectrum_snap {
   size_t divide_pages;
   libspectrum_byte* divide_eprom[ 1 ];
   libspectrum_byte* divide_ram[ SNAPSHOT_DIVIDE_PAGES ];
+
+  int fuller_box_active;
+
+  int melodik_active;
 };
 
 /* Initialise a libspectrum_snap structure */
@@ -1381,3 +1385,28 @@ libspectrum_snap_set_divide_ram( libspectrum_snap *snap, int idx, libspectrum_by
 {
   snap->divide_ram[idx] = divide_ram;
 }
+
+int
+libspectrum_snap_melodik_active( libspectrum_snap *snap )
+{
+  return snap->melodik_active;
+}
+
+int
+libspectrum_snap_fuller_box_active( libspectrum_snap *snap )
+{
+  return snap->fuller_box_active;
+}
+
+void
+libspectrum_snap_set_melodik_active( libspectrum_snap *snap, int melodik_active )
+{
+  snap->melodik_active = melodik_active;
+}
+
+void
+libspectrum_snap_set_fuller_box_active( libspectrum_snap *snap, int fuller_box_active )
+{
+  snap->fuller_box_active = fuller_box_active;
+}
+

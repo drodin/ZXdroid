@@ -21,6 +21,8 @@
 			android:entryValues="@array/control_entries" android:defaultValue="Keyboard" />
 		<PreferenceScreen android:key="defineKeys"
 			android:title="@string/define_keys" />
+		<CheckBoxPreference android:key="interceptMenuBack"
+			android:title="@string/intercept_menu_back" android:defaultValue="false" />
 		<com.drodin.zxdroid.menu.TrackballSens
 			android:key="trackballSensitivity" android:title="@string/trackball_sensitivity"
 			androidemu:minValue="1" androidemu:maxValue="10"
@@ -33,8 +35,15 @@
 	</PreferenceCategory>
 
 	<PreferenceCategory android:title="@string/video_settings">
+		<CheckBoxPreference android:key="frameSkip"
+			android:title="@string/frame_skip" android:defaultValue="false" />
 		<CheckBoxPreference android:key="smoothScaling"
 			android:title="@string/smooth_scaling" android:defaultValue="true" />
+	</PreferenceCategory>
+	
+	<PreferenceCategory android:title="@string/help">
+		<PreferenceScreen android:key="help"
+			android:title="@string/help" />
 	</PreferenceCategory>
 
 </PreferenceScreen>

@@ -22,8 +22,8 @@
 		<Key android:codes="8010" android:keyIcon="@drawable/zxkb_down_left" />
 		<Key android:codes="10" android:keyIcon="@drawable/zxkb_down" />
 		<Key android:codes="9010" android:keyIcon="@drawable/zxkb_down_right" />
-		<Key android:codes="62" android:keyIcon="@drawable/zxkb_space"
-			android:horizontalGap="60dip" />
+		<Key android:codes="1012" android:keyIcon="@drawable/zxkb_fire_lock"
+			android:isSticky="true" android:horizontalGap="60dip" />
 	</Row>
 
 </Keyboard>

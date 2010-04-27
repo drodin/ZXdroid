@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.drodin.zxdroid" android:versionCode="3"
-	android:versionName="0.4.2">
+	package="com.drodin.zxdroid" android:versionCode="6"
+	android:versionName="0.5.1">
 
 	<supports-screens android:smallScreens="true"
 		android:normalScreens="true" android:largeScreens="true"
@@ -20,6 +20,9 @@
 		</activity>
 
 		<activity android:name=".menu.MenuTop" android:theme="@style/Theme.Translucent" />
+		<activity android:name=".menu.SelectControl" android:theme="@style/Theme.Translucent.Dialog" />
+		<activity android:name=".menu.WelcomeMenu" android:theme="@style/Theme.Translucent.Dialog" />
+		<activity android:name=".menu.HelpView" />
 		<activity android:name=".menu.FileOpen" />
 		<activity android:name=".menu.FileSave" />
 		<activity android:name=".menu.DefineKeys" />
