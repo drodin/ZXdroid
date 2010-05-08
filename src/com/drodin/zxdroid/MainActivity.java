@@ -132,13 +132,15 @@ public class MainActivity extends Activity implements AdListener {
 			mInnerLayout.addView(mMainView,
 					new LayoutParams(NativeLib.mWidth, NativeLib.mHeight));	
 			mMainLayout.addView(mInnerLayout);
-			mMainLayout.addView(mControlsView,
-					new LayoutParams(NativeLib.mWidth, mSoftControls.mControl.getHeight()));
+			if (!NativeLib.hideControls) {
+				mMainLayout.addView(mControlsView,
+						new LayoutParams(NativeLib.mWidth, mSoftControls.mControl.getHeight()));
+			}
 			mMainLayout.addView(adView,
 					new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.FILL_PARENT));
 		} else {
 			mMainLayout.setOrientation(LinearLayout.HORIZONTAL);
-			/*if (NativeLib.hideControls) {
+			if (NativeLib.hideControls) {
 				mInnerLayout.setLayoutParams(
 						new LayoutParams(
 								NativeLib.mWidth*NativeLib.spectrumScreenWidth/NativeLib.spectrumScreenHeight,
@@ -147,7 +149,7 @@ public class MainActivity extends Activity implements AdListener {
 						new LayoutParams(
 								NativeLib.mWidth*NativeLib.spectrumScreenWidth/NativeLib.spectrumScreenHeight,
 								NativeLib.mWidth));
-			} else {*/
+			} else {
 				mMainLayout.addView(mControlsView,
 						new LayoutParams(NativeLib.displayHeight-NativeLib.mWidth, NativeLib.mWidth));
 				mInnerLayout.setLayoutParams(
@@ -156,7 +158,7 @@ public class MainActivity extends Activity implements AdListener {
 						new LayoutParams(NativeLib.mWidth, NativeLib.mHeight));
 				mInnerLayout.addView(adView,
 						new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.FILL_PARENT));
-			//}
+			}
 			mMainLayout.addView(mInnerLayout);
 		}
 
@@ -226,14 +228,14 @@ public class MainActivity extends Activity implements AdListener {
 			startActivityForResult(new Intent(this, MenuTop.class), 0);
 		}
 	}
-	
+
 	public void showSelectControl () {
 		if (!menuOnTop) {
 			menuOnTop = true;
 			startActivityForResult(new Intent(this, SelectControl.class), 0);
 		}
 	}
-	
+
 	public void showWelcomeMenu () {
 		if (!menuOnTop) {
 			menuOnTop = true;
@@ -244,6 +246,11 @@ public class MainActivity extends Activity implements AdListener {
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
+
+		if(NativeLib.hideControls != NativeLib.controlsHidden) {
+			NativeLib.controlsHidden = NativeLib.hideControls;
+			createScreen();
+		}
 
 		if (resultCode == RESULT_OK && requestCode == 0) {
 
@@ -277,10 +284,12 @@ public class MainActivity extends Activity implements AdListener {
 				                       = Integer.parseInt(keyPairs[i].split(":")[1]);
 		}
 
-		NativeLib.frameSkip = settings.getBoolean("frameSkip", false);
+		NativeLib.skipFrames = settings.getBoolean("skipFrames", true);
 		NativeLib.smoothScaling = settings.getBoolean("smoothScaling", true);
 		NativeLib.soundEnabled = settings.getBoolean("soundEnabled", false);
 		NativeLib.trackballSensitivity = settings.getInt("trackballSensitivity", 3);
+		NativeLib.hideControls = settings.getBoolean("hideControls", false);
+		NativeLib.controlsHidden = NativeLib.hideControls;
 		NativeLib.interceptMenuBack = settings.getBoolean("interceptMenuBack", false);
 		NativeLib.onScreenControls = settings.getString("onScreenControls", "Kempston");
 		//NativeLib.currentMachine = settings.getString("currentMachine", "128");
@@ -320,25 +329,21 @@ public class MainActivity extends Activity implements AdListener {
 		} catch(IOException e) { }
 	}
 
-	@Override
 	public void onFailedToReceiveAd(AdView arg0) {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
 	public void onFailedToReceiveRefreshedAd(AdView arg0) {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
 	public void onReceiveAd(AdView arg0) {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
 	public void onReceiveRefreshedAd(AdView arg0) {
 		// TODO Auto-generated method stub
 

@@ -54,11 +54,12 @@ implements Preference.OnPreferenceChangeListener {
 
 		settings = PreferenceManager.getDefaultSharedPreferences(this);
 
-		findPreference("frameSkip").setOnPreferenceChangeListener(this);
+		findPreference("skipFrames").setOnPreferenceChangeListener(this);
 		findPreference("smoothScaling").setOnPreferenceChangeListener(this);
 
 		findPreference("soundEnabled").setOnPreferenceChangeListener(this);
 
+		findPreference("hideControls").setOnPreferenceChangeListener(this);
 		findPreference("onScreenControls").setSummary(NativeLib.onScreenControls);
 		findPreference("onScreenControls").setOnPreferenceChangeListener(this);
 		
@@ -114,10 +115,9 @@ implements Preference.OnPreferenceChangeListener {
 		return super.onPreferenceTreeClick(screen, pref);
 	}
 
-	@Override
 	public boolean onPreferenceChange(Preference preference, Object newValue) {
-		if (preference.getKey().equals("frameSkip")) {
-			NativeLib.frameSkip = (newValue.equals(false))?false:true;
+		if (preference.getKey().equals("skipFrames")) {
+			NativeLib.skipFrames = (newValue.equals(false))?false:true;
 			finish();
 		}
 		if (preference.getKey().equals("smoothScaling")) {
@@ -126,6 +126,10 @@ implements Preference.OnPreferenceChangeListener {
 		}
 		if (preference.getKey().equals("soundEnabled")) {
 			NativeLib.soundEnabled = (newValue.equals(false))?false:true;
+			finish();
+		}
+		if (preference.getKey().equals("hideControls")) {
+			NativeLib.hideControls = (newValue.equals(false))?false:true;
 			finish();
 		}
 		if (preference.getKey().equals("interceptMenuBack")) {

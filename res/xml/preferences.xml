@@ -16,6 +16,8 @@
 	</PreferenceCategory>
 
 	<PreferenceCategory android:title="@string/control_settings">
+		<CheckBoxPreference android:key="hideControls"
+			android:title="@string/hide_controls" android:defaultValue="false" />
 		<ListPreference android:key="onScreenControls"
 			android:title="@string/onscreen_controls" android:entries="@array/control_entries"
 			android:entryValues="@array/control_entries" android:defaultValue="Keyboard" />
@@ -35,8 +37,8 @@
 	</PreferenceCategory>
 
 	<PreferenceCategory android:title="@string/video_settings">
-		<CheckBoxPreference android:key="frameSkip"
-			android:title="@string/frame_skip" android:defaultValue="false" />
+		<CheckBoxPreference android:key="skipFrames"
+			android:title="@string/frame_skip" android:defaultValue="true" />
 		<CheckBoxPreference android:key="smoothScaling"
 			android:title="@string/smooth_scaling" android:defaultValue="true" />
 	</PreferenceCategory>

@@ -36,7 +36,7 @@ public class NativeLib {
 	public static volatile String openFileName = "";
 	public static volatile String saveFileName = "";
 
-	public static boolean frameSkip;
+	public static boolean skipFrames;
 
 	public static boolean smoothScaling;
 	
@@ -124,5 +124,6 @@ public class NativeLib {
 	public static final String tmpFilePrefix = "zxdroid_tmp_";
 	public static String tmpUncompressedFN = null;
 
-	//public static boolean hideControls = true;
+	public static boolean hideControls;
+	public static boolean controlsHidden;
 }

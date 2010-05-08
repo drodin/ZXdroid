@@ -34,7 +34,7 @@ import android.view.MotionEvent;
 
 public class MainView extends GLSurfaceView {
 
-	MainActivity mMainActivity = null;
+	private MainActivity mMainActivity = null;
 
 	private static boolean trackballUsed = false;
 	private static long trackUp = 0;
@@ -45,12 +45,14 @@ public class MainView extends GLSurfaceView {
 
 	public MainView(Context context) {
 		super(context);
+		
+		mMainActivity = MainActivity.currentInstance;
 
 		setId((int)Math.random()*100);
 
 		setFocusable(true);
 		setFocusableInTouchMode(true);
-		//requestFocus();
+		requestFocus();
 
 		setRenderer(new MainRenderer());
 		setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
@@ -64,10 +66,18 @@ public class MainView extends GLSurfaceView {
 				event.getY()>NativeLib.menuTouchDelta &&
 				event.getY()<(float)getHeight()-NativeLib.menuTouchDelta
 		) {
-			if (NativeLib.interceptMenuBack)
-				MainActivity.currentInstance.showMenu();
+			if (NativeLib.interceptMenuBack || NativeLib.hideControls)
+				post(new Runnable() {					
+					public void run() {
+						mMainActivity.showMenu();
+					}
+				});
 			else
-				MainActivity.currentInstance.showSelectControl();
+				post(new Runnable() {					
+					public void run() {
+						mMainActivity.showSelectControl();
+					}
+				});
 		}
 		return true;
 	}
@@ -77,8 +87,11 @@ public class MainView extends GLSurfaceView {
 		final int keyCode = event.getKeyCode();
 		if (event.getRepeatCount() == 0 && keyCode > 0 && keyCode < NativeLib.androidKeys.length) {
 			if (!NativeLib.interceptMenuBack && keyCode==KeyEvent.KEYCODE_MENU) {
-				MainActivity.currentInstance.showMenu();
-				return true;
+				post(new Runnable() {					
+					public void run() {
+						mMainActivity.showMenu();
+					}
+				});				return true;
 			} else if (!NativeLib.interceptMenuBack && keyCode==KeyEvent.KEYCODE_BACK) {
 				return false;
 			} else if (keyCode==KeyEvent.KEYCODE_VOLUME_UP && 
@@ -220,7 +233,6 @@ public class MainView extends GLSurfaceView {
 
 	public class MainRenderer implements GLSurfaceView.Renderer {
 
-		@Override
 		public void onDrawFrame(GL10 gl) {
 
 			if (trackballUsed)
@@ -235,22 +247,18 @@ public class MainView extends GLSurfaceView {
 
 		}
 
-		@Override
 		public void onSurfaceChanged(GL10 gl, int width, int height) {
 			NativeLib.resize(width, height, NativeLib.smoothScaling);
 			if (MainActivity.firstRun) {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				MainActivity.currentInstance.showWelcomeMenu();
+				post(new Runnable() {					
+					public void run() {
+						mMainActivity.showWelcomeMenu();
+					}
+				});
 				MainActivity.firstRun = false;
 			}
 		}
 
-		@Override
 		public void onSurfaceCreated(GL10 gl, EGLConfig config) {
 			Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 			//Process.setThreadPriority(Process.THREAD_PRIORITY_DISPLAY);

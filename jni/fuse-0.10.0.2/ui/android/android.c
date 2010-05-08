@@ -71,7 +71,7 @@ resize(JNIEnv *env, jobject thiz, jint width, jint height, jboolean scaling) {
     jfieldID sfid = (*cenv)->GetStaticFieldID(cenv, nclass, "soundEnabled", "Z");
     settings_current.sound = (*cenv)->GetStaticBooleanField(cenv, nclass, sfid);
 
-    jfieldID rfid = (*cenv)->GetStaticFieldID(cenv, nclass, "frameSkip", "Z");
+    jfieldID rfid = (*cenv)->GetStaticFieldID(cenv, nclass, "skipFrames", "Z");
     settings_current.frame_rate = (*cenv)->GetStaticBooleanField(cenv, nclass, rfid) + 1;
 
     jboolean isCopy;

@@ -89,8 +89,6 @@ public class FileSave extends ListActivity {
 
 		saveButton = (Button) findViewById(R.id.save_btn);
 		saveButton.setOnClickListener(new View.OnClickListener() {
-
-			@Override
 			public void onClick(View v) {
 				final Intent extras = new Intent();
 				extras.putExtra("menuEventValue", NativeLib.MENU_FILE_SAVESNAPSHOT);

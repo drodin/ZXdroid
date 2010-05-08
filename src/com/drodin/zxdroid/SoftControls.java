@@ -130,7 +130,6 @@ public class SoftControls extends KeyboardView implements KeyboardView.OnKeyboar
 		}
 	}
 
-	@Override
 	public void onKey(int primaryCode, int[] keyCodes) {
 
 		if (primaryCode == Keyboard.KEYCODE_SHIFT) {
@@ -173,7 +172,6 @@ public class SoftControls extends KeyboardView implements KeyboardView.OnKeyboar
 
 	}
 
-	@Override
 	public void onPress(final int primaryCode) {
 		if (primaryCode!=Keyboard.KEYCODE_SHIFT && primaryCode!=Keyboard.KEYCODE_ALT) {
 			if (primaryCode > NativeLib.spectrumModFireLock + NativeLib.spectrumKeys.length) {
@@ -196,8 +194,6 @@ public class SoftControls extends KeyboardView implements KeyboardView.OnKeyboar
 		} 
 	}
 
-
-	@Override
 	public void onRelease(final int primaryCode) {
 		if (primaryCode!=Keyboard.KEYCODE_SHIFT && primaryCode!=Keyboard.KEYCODE_ALT) {
 			if (lastKeyCode1!=0) {
@@ -211,7 +207,6 @@ public class SoftControls extends KeyboardView implements KeyboardView.OnKeyboar
 		}
 	}
 
-	@Override
 	public void onText(CharSequence text) {
 	}
 
